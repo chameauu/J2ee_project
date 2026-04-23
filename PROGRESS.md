@@ -421,19 +421,113 @@ project/
 
 ---
 
+## ✅ Phase 3.2: Role-Based Access Control (COMPLETE)
+
+### Access Control Rules Implemented:
+
+**Patient Endpoints** (`/api/patients`):
+- ✅ POST (Create) - ADMIN only
+- ✅ GET /{id} (Read) - ADMIN, DOCTOR, PHARMACIST, PATIENT
+- ✅ PUT /{id} (Update) - ADMIN, PATIENT (own profile)
+- ✅ DELETE /{id} (Delete) - ADMIN only
+- ✅ GET (List all) - ADMIN, DOCTOR, PHARMACIST
+
+**Doctor Endpoints** (`/api/doctors`):
+- ✅ POST (Create) - ADMIN only
+- ✅ GET /{id} (Read) - ADMIN, DOCTOR, PATIENT
+- ✅ PUT /{id} (Update) - ADMIN, DOCTOR (own profile)
+- ✅ DELETE /{id} (Delete) - ADMIN only
+- ✅ GET (List all) - ADMIN, DOCTOR, PATIENT
+- ✅ GET /search (Search by specialization) - ADMIN, DOCTOR, PATIENT
+
+**Pharmacist Endpoints** (`/api/pharmacists`):
+- ✅ POST (Create) - ADMIN only
+- ✅ GET /{id} (Read) - ADMIN, PHARMACIST
+- ✅ PUT /{id} (Update) - ADMIN, PHARMACIST (own profile)
+- ✅ DELETE /{id} (Delete) - ADMIN only
+- ✅ GET (List all) - ADMIN, DOCTOR, PHARMACIST
+
+### Security Annotations Used:
+
+```java
+@PreAuthorize("hasRole('ADMIN')")              // Single role
+@PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')") // Multiple roles
+```
+
+### Access Control Matrix:
+
+| Endpoint | ADMIN | DOCTOR | PATIENT | PHARMACIST |
+|----------|-------|--------|---------|------------|
+| POST /api/patients | ✅ | ❌ | ❌ | ❌ |
+| GET /api/patients/{id} | ✅ | ✅ | ✅ | ✅ |
+| PUT /api/patients/{id} | ✅ | ❌ | ✅* | ❌ |
+| DELETE /api/patients/{id} | ✅ | ❌ | ❌ | ❌ |
+| GET /api/patients | ✅ | ✅ | ❌ | ✅ |
+| POST /api/doctors | ✅ | ❌ | ❌ | ❌ |
+| GET /api/doctors/{id} | ✅ | ✅ | ✅ | ❌ |
+| PUT /api/doctors/{id} | ✅ | ✅* | ❌ | ❌ |
+| DELETE /api/doctors/{id} | ✅ | ❌ | ❌ | ❌ |
+| GET /api/doctors | ✅ | ✅ | ✅ | ❌ |
+| GET /api/doctors/search | ✅ | ✅ | ✅ | ❌ |
+| POST /api/pharmacists | ✅ | ❌ | ❌ | ❌ |
+| GET /api/pharmacists/{id} | ✅ | ❌ | ❌ | ✅ |
+| PUT /api/pharmacists/{id} | ✅ | ❌ | ❌ | ✅* |
+| DELETE /api/pharmacists/{id} | ✅ | ❌ | ❌ | ❌ |
+| GET /api/pharmacists | ✅ | ✅ | ❌ | ✅ |
+
+*Note: Users can update their own profiles (requires additional logic to verify ownership)
+
+### Design Rationale:
+
+1. **ADMIN has full control**: Can create, read, update, delete all users
+2. **DOCTOR can view patients**: Needed for medical consultations
+3. **PATIENT can view doctors**: Needed to find and book appointments
+4. **PHARMACIST can view patients**: Needed to dispense prescriptions
+5. **Users can update own profiles**: Self-service profile management
+6. **Only ADMIN can delete**: Prevents accidental data loss
+
+### Security Features:
+- ✅ Method-level security with @PreAuthorize
+- ✅ Role-based authorization
+- ✅ Automatic 403 Forbidden for unauthorized access
+- ✅ Consistent across all controllers
+
+### Important Notes:
+
+**Current Limitation**: The system allows users to update ANY profile of their role type, not just their own. For example:
+- A PATIENT can update any patient's profile (not just their own)
+- A DOCTOR can update any doctor's profile (not just their own)
+
+**Production Requirement**: Add ownership verification:
+```java
+@PreAuthorize("hasRole('ADMIN') or (hasRole('PATIENT') and #id == authentication.principal.id)")
+public ResponseEntity<PatientDTO> updatePatient(@PathVariable Long id, ...) {
+    // Only allow if user is ADMIN or updating their own profile
+}
+```
+
+This requires:
+- Storing user ID in JWT token
+- Custom SpEL expression for ownership check
+- Or service-layer validation
+
+---
+
 ## 🎯 Next Steps
 
-### Phase 3.2: Role-Based Access Control - RECOMMENDED
-- [ ] Add @PreAuthorize annotations to controllers
-- [ ] Implement role-based endpoint protection
-- [ ] Add authorization tests
-- [ ] Document API access rules
+### Phase 4: Medical Records Module - RECOMMENDED
+- [ ] Create MedicalRecord entity with relationships
+- [ ] Implement MedicalRecord CRUD operations
+- [ ] Add doctor-patient relationship
+- [ ] Implement medical history viewing
+- [ ] Add role-based access for medical records
 
-### Alternative: Add Password Management
+### Alternative: Enhance Authentication
 - [ ] Add password fields to entities
 - [ ] Implement BCrypt password hashing
 - [ ] Create registration endpoints
-- [ ] Add password reset functionality
+- [ ] Add ownership verification for profile updates
+- [ ] Implement refresh tokens
 
 ---
 

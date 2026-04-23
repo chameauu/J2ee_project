@@ -6,6 +6,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -20,18 +21,21 @@ public class PharmacistController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<PharmacistDTO> createPharmacist(@Valid @RequestBody PharmacistDTO pharmacistDTO) {
         PharmacistDTO created = pharmacistService.createPharmacist(pharmacistDTO);
         return ResponseEntity.created(URI.create("/api/pharmacists/" + created.getId())).body(created);
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
     public ResponseEntity<PharmacistDTO> getPharmacist(@PathVariable Long id) {
         PharmacistDTO pharmacist = pharmacistService.getPharmacistById(id);
         return ResponseEntity.ok(pharmacist);
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'PHARMACIST')")
     public ResponseEntity<PharmacistDTO> updatePharmacist(
             @PathVariable Long id,
             @Valid @RequestBody PharmacistDTO pharmacistDTO) {
@@ -40,12 +44,14 @@ public class PharmacistController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deletePharmacist(@PathVariable Long id) {
         pharmacistService.deletePharmacist(id);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST')")
     public ResponseEntity<List<PharmacistDTO>> getAllPharmacists() {
         List<PharmacistDTO> pharmacists = pharmacistService.getAllPharmacists();
         return ResponseEntity.ok(pharmacists);
