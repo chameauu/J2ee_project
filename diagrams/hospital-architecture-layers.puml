@@ -1,0 +1,422 @@
+@startuml Hospital Management System - Architecture Layers
+
+!define CONTROLLER_COLOR #E3F2FD
+!define SERVICE_COLOR #E8F5E9
+!define REPOSITORY_COLOR #FFF3E0
+!define ENTITY_COLOR #FCE4EC
+
+skinparam packageStyle rectangle
+
+' ============================================
+' CONTROLLER LAYER
+' ============================================
+
+package "Controller Layer (REST API)" CONTROLLER_COLOR {
+    
+    class DoctorController <<@RestController>> {
+        - doctorService: IDoctorService
+        --
+        + GET /api/doctors/patients
+        + GET /api/doctors/patients/{id}
+        + PUT /api/doctors/medical-records/{id}
+        + GET /api/doctors/appointments
+        + POST /api/doctors/prescriptions
+        + GET /api/doctors/statistics
+    }
+    
+    class PatientController <<@RestController>> {
+        - patientService: IPatientService
+        --
+        + GET /api/patients/profile
+        + GET /api/patients/medical-history
+        + GET /api/patients/appointments
+        + POST /api/patients/appointments
+        + GET /api/patients/prescriptions
+    }
+    
+    class PharmacistController <<@RestController>> {
+        - pharmacyService: IPharmacyService
+        --
+        + GET /api/pharmacy/prescriptions
+        + PUT /api/pharmacy/prescriptions/{id}/dispense
+        + GET /api/pharmacy/stock
+        + POST /api/pharmacy/stock
+    }
+    
+    class AdministratorController <<@RestController>> {
+        - adminService: IAdminService
+        - statisticsService: IStatisticsService
+        --
+        + GET /api/admin/dashboard
+        + GET /api/admin/users
+        + POST /api/admin/users
+        + GET /api/admin/reports
+    }
+    
+    class HospitalDirectorController <<@RestController>> {
+        - directorService: IDirectorService
+        --
+        + GET /api/director/dashboard
+        + GET /api/director/doctors
+        + GET /api/director/patients
+        + GET /api/director/pharmacy/inventory
+        + GET /api/director/analytics
+        + GET /api/director/reports
+    }
+    
+    class AppointmentController <<@RestController>> {
+        - appointmentService: IAppointmentService
+        --
+        + GET /api/appointments
+        + POST /api/appointments
+        + PUT /api/appointments/{id}
+        + DELETE /api/appointments/{id}
+    }
+}
+
+' ============================================
+' SERVICE LAYER
+' ============================================
+
+package "Service Layer (Business Logic)" SERVICE_COLOR {
+    
+    interface IDoctorService <<interface>> {
+        + getAllPatients(): List<PatientDTO>
+        + getPatientById(id): PatientDTO
+        + createMedicalRecord(dto): MedicalRecordDTO
+        + updateMedicalRecord(id, dto): MedicalRecordDTO
+        + writePrescription(dto): PrescriptionDTO
+        + getStatistics(doctorId): DoctorStatsDTO
+    }
+    
+    class DoctorServiceImpl <<@Service>> {
+        - patientRepository: PatientRepository
+        - medicalRecordRepository: MedicalRecordRepository
+        - prescriptionRepository: PrescriptionRepository
+        --
+        implements IDoctorService
+    }
+    
+    interface IPatientService <<interface>> {
+        + getProfile(id): PatientDTO
+        + getMedicalHistory(id): List<MedicalRecordDTO>
+        + bookAppointment(dto): AppointmentDTO
+        + getPrescriptions(id): List<PrescriptionDTO>
+    }
+    
+    class PatientServiceImpl <<@Service>> {
+        - patientRepository: PatientRepository
+        - medicalRecordRepository: MedicalRecordRepository
+        - appointmentRepository: AppointmentRepository
+        --
+        implements IPatientService
+    }
+    
+    interface IPharmacyService <<interface>> {
+        + getPendingPrescriptions(): List<PrescriptionDTO>
+        + dispensePrescription(id, pharmacistId): void
+        + getAllStock(): List<PharmacyStockDTO>
+        + updateStock(id, dto): PharmacyStockDTO
+    }
+    
+    class PharmacyServiceImpl <<@Service>> {
+        - prescriptionRepository: PrescriptionRepository
+        - stockRepository: PharmacyStockRepository
+        - medicationRepository: MedicationRepository
+        --
+        implements IPharmacyService
+    }
+    
+    interface IStatisticsService <<interface>> {
+        + getDashboardStats(): DashboardStatsDTO
+        + getChartData(type): Map<String, Object>
+        + getPatientDemographics(): PatientDemographicsDTO
+    }
+    
+    class StatisticsServiceImpl <<@Service>> {
+        - userRepository: UserRepository
+        - appointmentRepository: AppointmentRepository
+        - prescriptionRepository: PrescriptionRepository
+        --
+        implements IStatisticsService
+    }
+    
+    interface IDirectorService <<interface>> {
+        + getExecutiveDashboard(): DirectorDashboardDTO
+        + getAllDoctors(): List<DoctorDTO>
+        + getDoctorPerformance(id): DoctorPerformanceDTO
+        + getAllPatients(): List<PatientDTO>
+        + getPharmacyInventory(): List<PharmacyStockDTO>
+        + getAppointmentAnalytics(start, end): Map
+        + getExecutiveSummary(): ExecutiveSummaryDTO
+    }
+    
+    class DirectorServiceImpl <<@Service>> {
+        - doctorRepository: DoctorRepository
+        - patientRepository: PatientRepository
+        - stockRepository: PharmacyStockRepository
+        - appointmentRepository: AppointmentRepository
+        --
+        implements IDirectorService
+    }
+    
+    interface IAppointmentService <<interface>> {
+        + bookAppointment(dto): AppointmentDTO
+        + rescheduleAppointment(id, dateTime): AppointmentDTO
+        + cancelAppointment(id): void
+        + getAvailableSlots(doctorId, date): List<TimeSlot>
+    }
+    
+    class AppointmentServiceImpl <<@Service>> {
+        - appointmentRepository: AppointmentRepository
+        - scheduleRepository: DoctorScheduleRepository
+        --
+        implements IAppointmentService
+    }
+}
+
+' ============================================
+' REPOSITORY LAYER
+' ============================================
+
+package "Repository Layer (Data Access)" REPOSITORY_COLOR {
+    
+    interface PatientRepository <<@Repository>> {
+        extends JpaRepository<Patient, Long>
+        --
+        + findByEmail(email): Optional<Patient>
+        + countByDoctorId(doctorId): Long
+        + findByBloodType(bloodType): List<Patient>
+    }
+    
+    interface DoctorRepository <<@Repository>> {
+        extends JpaRepository<Doctor, Long>
+        --
+        + findBySpecialization(spec): List<Doctor>
+        + findByLicenseNumber(license): Optional<Doctor>
+    }
+    
+    interface MedicalRecordRepository <<@Repository>> {
+        extends JpaRepository<MedicalRecord, Long>
+        --
+        + findByPatientIdOrderByVisitDateDesc(patientId): List<MedicalRecord>
+        + findByDoctorId(doctorId): List<MedicalRecord>
+        + countByPatientId(patientId): Long
+    }
+    
+    interface AppointmentRepository <<@Repository>> {
+        extends JpaRepository<Appointment, Long>
+        --
+        + findByDoctorIdAndDate(doctorId, date): List<Appointment>
+        + findByPatientId(patientId): List<Appointment>
+        + countByDoctorIdAndStatus(doctorId, status): Long
+        + isSlotAvailable(doctorId, dateTime): Boolean
+    }
+    
+    interface PrescriptionRepository <<@Repository>> {
+        extends JpaRepository<Prescription, Long>
+        --
+        + findByPatientIdAndStatus(patientId, status): List<Prescription>
+        + findByStatus(status): List<Prescription>
+        + countByDoctorIdAndStatus(doctorId, status): Long
+    }
+    
+    interface PharmacyStockRepository <<@Repository>> {
+        extends JpaRepository<PharmacyStock, Long>
+        --
+        + findByMedicationId(medicationId): Optional<PharmacyStock>
+        + findLowStockItems(): List<PharmacyStock>
+        + findExpiringMedications(date): List<PharmacyStock>
+    }
+    
+    interface MedicationRepository <<@Repository>> {
+        extends JpaRepository<Medication, Long>
+        --
+        + findByName(name): Optional<Medication>
+        + findByType(type): List<Medication>
+    }
+}
+
+' ============================================
+' ENTITY LAYER
+' ============================================
+
+package "Entity Layer (Domain Model)" ENTITY_COLOR {
+    
+    class Patient <<@Entity>> {
+        - id: Long
+        - firstName: String
+        - lastName: String
+        - dateOfBirth: LocalDate
+        - bloodType: String
+    }
+    
+    class Doctor <<@Entity>> {
+        - id: Long
+        - specialization: String
+        - licenseNumber: String
+    }
+    
+    class MedicalRecord <<@Entity>> {
+        - id: Long
+        - visitDate: LocalDateTime
+        - diagnosis: String
+        - treatment: String
+        - notes: String
+    }
+    
+    class Appointment <<@Entity>> {
+        - id: Long
+        - appointmentDateTime: LocalDateTime
+        - status: AppointmentStatus
+    }
+    
+    class Prescription <<@Entity>> {
+        - id: Long
+        - prescribedDate: LocalDateTime
+        - status: PrescriptionStatus
+    }
+    
+    class Medication <<@Entity>> {
+        - id: Long
+        - name: String
+        - type: MedicationType
+    }
+    
+    class PharmacyStock <<@Entity>> {
+        - id: Long
+        - quantity: Integer
+        - expiryDate: LocalDate
+    }
+    
+    class HospitalDirector <<@Entity>> {
+        - id: Long
+        - hospitalName: String
+        - credentials: String
+    }
+}
+
+' ============================================
+' LAYER RELATIONSHIPS
+' ============================================
+
+' Controller -> Service
+DoctorController ..> IDoctorService : uses
+PatientController ..> IPatientService : uses
+PharmacistController ..> IPharmacyService : uses
+AdministratorController ..> IStatisticsService : uses
+HospitalDirectorController ..> IDirectorService : uses
+AppointmentController ..> IAppointmentService : uses
+
+' Service Implementation -> Interface
+DoctorServiceImpl ..|> IDoctorService : implements
+PatientServiceImpl ..|> IPatientService : implements
+PharmacyServiceImpl ..|> IPharmacyService : implements
+StatisticsServiceImpl ..|> IStatisticsService : implements
+DirectorServiceImpl ..|> IDirectorService : implements
+AppointmentServiceImpl ..|> IAppointmentService : implements
+
+' Service -> Repository
+DoctorServiceImpl ..> PatientRepository : uses
+DoctorServiceImpl ..> MedicalRecordRepository : uses
+DoctorServiceImpl ..> PrescriptionRepository : uses
+
+PatientServiceImpl ..> PatientRepository : uses
+PatientServiceImpl ..> MedicalRecordRepository : uses
+PatientServiceImpl ..> AppointmentRepository : uses
+
+PharmacyServiceImpl ..> PrescriptionRepository : uses
+PharmacyServiceImpl ..> PharmacyStockRepository : uses
+PharmacyServiceImpl ..> MedicationRepository : uses
+
+AppointmentServiceImpl ..> AppointmentRepository : uses
+
+DirectorServiceImpl ..> DoctorRepository : uses
+DirectorServiceImpl ..> PatientRepository : uses
+DirectorServiceImpl ..> PharmacyStockRepository : uses
+DirectorServiceImpl ..> AppointmentRepository : uses
+DirectorServiceImpl ..> PrescriptionRepository : uses
+
+' Repository -> Entity
+PatientRepository ..> Patient : manages
+DoctorRepository ..> Doctor : manages
+MedicalRecordRepository ..> MedicalRecord : manages
+AppointmentRepository ..> Appointment : manages
+PrescriptionRepository ..> Prescription : manages
+MedicationRepository ..> Medication : manages
+PharmacyStockRepository ..> PharmacyStock : manages
+
+' ============================================
+' CROSS-CUTTING CONCERNS
+' ============================================
+
+package "Cross-Cutting Concerns" #E8EAF6 {
+    
+    class GlobalExceptionHandler <<@RestControllerAdvice>> {
+        + handleNotFoundException(ex): ResponseEntity
+        + handleValidationException(ex): ResponseEntity
+        + handleGenericException(ex): ResponseEntity
+    }
+    
+    class JwtAuthenticationFilter <<@Component>> {
+        - jwtTokenProvider: JwtTokenProvider
+        --
+        + doFilterInternal(request, response, chain): void
+    }
+    
+    class TenantInterceptor <<@Component>> {
+        + preHandle(request, response, handler): boolean
+        + afterCompletion(request, response, handler, ex): void
+    }
+    
+    class SecurityConfig <<@Configuration>> {
+        + securityFilterChain(http): SecurityFilterChain
+        + passwordEncoder(): PasswordEncoder
+    }
+}
+
+' ============================================
+' NOTES
+' ============================================
+
+note right of "Controller Layer (REST API)"
+    **Responsibilities:**
+    - Handle HTTP requests/responses
+    - Validate input
+    - Delegate to services
+    - Return DTOs (not entities)
+end note
+
+note right of "Service Layer (Business Logic)"
+    **Responsibilities:**
+    - Business logic
+    - Transaction management
+    - Orchestrate repositories
+    - Convert entities to DTOs
+end note
+
+note right of "Repository Layer (Data Access)"
+    **Responsibilities:**
+    - Database queries
+    - CRUD operations
+    - Custom query methods
+    - Spring Data JPA magic
+end note
+
+note right of "Entity Layer (Domain Model)"
+    **Responsibilities:**
+    - Domain model
+    - JPA mappings
+    - Relationships
+    - Business rules (minimal)
+end note
+
+note bottom of "Cross-Cutting Concerns"
+    **Applies to all layers:**
+    - Security (JWT)
+    - Multi-tenancy
+    - Exception handling
+    - Logging & monitoring
+end note
+
+@enduml

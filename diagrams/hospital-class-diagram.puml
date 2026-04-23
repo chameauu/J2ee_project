@@ -1,0 +1,368 @@
+@startuml Hospital Management System - Class Diagram
+
+!define ENTITY_COLOR #E8F5E9
+!define ABSTRACT_COLOR #FFF3E0
+!define ENUM_COLOR #E3F2FD
+
+skinparam class {
+    BackgroundColor ENTITY_COLOR
+    BorderColor #4CAF50
+    ArrowColor #2196F3
+}
+
+' ============================================
+' ENUMS
+' ============================================
+
+enum UserRole <<enumeration>> ENUM_COLOR {
+    DOCTOR
+    PATIENT
+    PHARMACIST
+    ADMIN
+    DIRECTOR
+}
+
+enum Gender <<enumeration>> ENUM_COLOR {
+    MALE
+    FEMALE
+    OTHER
+}
+
+enum AppointmentStatus <<enumeration>> ENUM_COLOR {
+    SCHEDULED
+    COMPLETED
+    CANCELLED
+    NO_SHOW
+}
+
+enum AppointmentType <<enumeration>> ENUM_COLOR {
+    CONSULTATION
+    FOLLOW_UP
+    EMERGENCY
+}
+
+enum PrescriptionStatus <<enumeration>> ENUM_COLOR {
+    ACTIVE
+    DISPENSED
+    EXPIRED
+    CANCELLED
+}
+
+enum MedicationType <<enumeration>> ENUM_COLOR {
+    TABLET
+    CAPSULE
+    SYRUP
+    INJECTION
+    CREAM
+    OTHER
+}
+
+
+
+
+
+' ============================================
+' USER HIERARCHY
+' ============================================
+
+abstract class User ABSTRACT_COLOR {
+    - id: Long
+    - username: String
+    - password: String
+    - email: String
+    - phone: String
+    - role: UserRole
+    - active: Boolean
+    - createdAt: LocalDateTime
+    - lastLogin: LocalDateTime
+    --
+    + getId(): Long
+    + getUsername(): String
+    + getEmail(): String
+    + isActive(): Boolean
+}
+
+class Doctor {
+    - specialization: String
+    - licenseNumber: String
+    - yearsOfExperience: Integer
+    - qualification: String
+    --
+    + getSpecialization(): String
+    + getLicenseNumber(): String
+    + getAppointments(): List<Appointment>
+    + getPrescriptions(): List<Prescription>
+}
+
+class Patient {
+    - firstName: String
+    - lastName: String
+    - dateOfBirth: LocalDate
+    - gender: Gender
+    - bloodType: String
+    - address: String
+    - emergencyContact: String
+    - insuranceNumber: String
+    --
+    + getFullName(): String
+    + getAge(): Integer
+    + getMedicalRecords(): List<MedicalRecord>
+    + getAppointments(): List<Appointment>
+    + getPrescriptions(): List<Prescription>
+}
+
+class Pharmacist {
+    - licenseNumber: String
+    - pharmacyName: String
+    - pharmacyAddress: String
+    --
+    + getLicenseNumber(): String
+    + getPharmacyName(): String
+}
+
+class Administrator {
+    - department: String
+    - accessLevel: String
+    --
+    + getDepartment(): String
+    + getAccessLevel(): String
+}
+
+class HospitalDirector {
+    - hospitalName: String
+    - appointmentDate: LocalDate
+    - credentials: String
+    --
+    + getHospitalName(): String
+    + getCredentials(): String
+}
+
+' ============================================
+' MEDICAL RECORDS
+' ============================================
+
+class MedicalRecord {
+    - id: Long
+    - visitDate: LocalDateTime
+    - chiefComplaint: String
+    - diagnosis: String
+    - treatment: String
+    - vitalSigns: String
+    - notes: String
+    --
+    + getId(): Long
+    + getVisitDate(): LocalDateTime
+    + getDiagnosis(): String
+    + getPatient(): Patient
+    + getDoctor(): Doctor
+    + getPrescriptions(): List<Prescription>
+}
+
+
+
+class VitalSigns {
+    - bloodPressure: String
+    - temperature: Float
+    - heartRate: Integer
+    - respiratoryRate: Integer
+    - oxygenSaturation: Float
+    - weight: Float
+    - height: Float
+    --
+    + getBloodPressure(): String
+    + getTemperature(): Float
+    + getBMI(): Float
+}
+
+' ============================================
+' APPOINTMENTS
+' ============================================
+
+class Appointment {
+    - id: Long
+    - appointmentDateTime: LocalDateTime
+    - durationMinutes: Integer
+    - status: AppointmentStatus
+    - type: AppointmentType
+    - reason: String
+    - notes: String
+    - createdAt: LocalDateTime
+    - updatedAt: LocalDateTime
+    --
+    + getId(): Long
+    + getAppointmentDateTime(): LocalDateTime
+    + getStatus(): AppointmentStatus
+    + getPatient(): Patient
+    + getDoctor(): Doctor
+    + updateStatus(status: AppointmentStatus): void
+    + complete(): void
+}
+
+' ============================================
+' PRESCRIPTIONS
+' ============================================
+
+class Prescription {
+    - id: Long
+    - prescribedDate: LocalDateTime
+    - validUntil: LocalDate
+    - status: PrescriptionStatus
+    - notes: String
+    --
+    + getId(): Long
+    + getPrescribedDate(): LocalDateTime
+    + getStatus(): PrescriptionStatus
+    + getPatient(): Patient
+    + getDoctor(): Doctor
+    + getMedicalRecord(): MedicalRecord
+    + getItems(): List<PrescriptionItem>
+    + isValid(): Boolean
+    + markAsDispensed(): void
+}
+
+class PrescriptionItem {
+    - id: Long
+    - dosage: String
+    - frequency: String
+    - durationDays: Integer
+    - quantity: Integer
+    - instructions: String
+    - dispensed: Boolean
+    - dispensedAt: LocalDateTime
+    --
+    + getId(): Long
+    + getDosage(): String
+    + getFrequency(): String
+    + getPrescription(): Prescription
+    + getMedication(): Medication
+    + isDispensed(): Boolean
+    + markAsDispensed(pharmacist: Pharmacist): void
+}
+
+' ============================================
+' PHARMACY & MEDICATIONS
+' ============================================
+
+class Medication {
+    - id: Long
+    - name: String
+    - genericName: String
+    - manufacturer: String
+    - type: MedicationType
+    - strength: String
+    - description: String
+    --
+    + getId(): Long
+    + getName(): String
+    + getGenericName(): String
+    + getType(): MedicationType
+    + getStocks(): List<PharmacyStock>
+}
+
+class PharmacyStock {
+    - id: Long
+    - quantity: Integer
+    - reorderLevel: Integer
+    - expiryDate: LocalDate
+    - batchNumber: String
+    - unitPrice: Double
+    - lastUpdated: LocalDateTime
+    --
+    + getId(): Long
+    + getQuantity(): Integer
+    + getMedication(): Medication
+    + isLowStock(): Boolean
+    + isExpiringSoon(): Boolean
+    + reduceStock(amount: Integer): void
+    + addStock(amount: Integer): void
+}
+
+
+
+' ============================================
+' RELATIONSHIPS - USER HIERARCHY
+' ============================================
+
+User <|-- Doctor
+User <|-- Patient
+User <|-- Pharmacist
+User <|-- Administrator
+User <|-- HospitalDirector
+
+User --> UserRole : has
+
+Patient --> Gender : has
+
+' ============================================
+' RELATIONSHIPS - MEDICAL RECORDS
+' ============================================
+
+Patient "1" -- "0..*" MedicalRecord : has >
+Doctor "1" -- "0..*" MedicalRecord : creates >
+
+' ============================================
+' RELATIONSHIPS - APPOINTMENTS
+' ============================================
+
+Patient "1" -- "0..*" Appointment : books >
+Doctor "1" -- "0..*" Appointment : has >
+
+Appointment --> AppointmentStatus : has
+Appointment --> AppointmentType : has
+
+' ============================================
+' RELATIONSHIPS - PRESCRIPTIONS
+' ============================================
+
+Patient "1" -- "0..*" Prescription : receives >
+Doctor "1" -- "0..*" Prescription : writes >
+MedicalRecord "1" -- "0..*" Prescription : generates >
+Prescription "1" *-- "1..*" PrescriptionItem : contains >
+PrescriptionItem "0..*" -- "1" Medication : references >
+Pharmacist "1" -- "0..*" PrescriptionItem : dispenses >
+
+Prescription --> PrescriptionStatus : has
+
+' ============================================
+' RELATIONSHIPS - PHARMACY
+' ============================================
+
+Medication "1" -- "0..*" PharmacyStock : has >
+Medication --> MedicationType : has
+
+' ============================================
+' NOTES
+' ============================================
+
+note right of User
+    Abstract base class for all users
+    Uses Single Table Inheritance
+    or Joined Table Inheritance
+end note
+
+note right of MedicalRecord
+    Central entity linking
+    patient visits with
+    diagnoses, notes, and
+    prescriptions
+end note
+
+note right of Prescription
+    Can be linked to a
+    MedicalRecord or created
+    independently
+end note
+
+note right of PharmacyStock
+    Tracks inventory levels
+    and expiry dates for
+    medications
+end note
+
+note bottom of Appointment
+    Supports scheduling,
+    rescheduling, and
+    cancellation
+end note
+
+@enduml

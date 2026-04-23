@@ -1,0 +1,629 @@
+@startuml Hospital Management System - Sequence Diagrams
+
+' ============================================
+' SEQUENCE 1: Doctor Views Patient File
+' ============================================
+
+title Doctor Views Patient Medical File
+
+actor Doctor
+participant "DoctorController" as DC
+participant "DoctorService" as DS
+participant "PatientRepository" as PR
+participant "MedicalRecordRepository" as MRR
+database "Database" as DB
+
+Doctor -> DC: GET /api/doctors/patients/{patientId}
+activate DC
+
+DC -> DS: getPatientById(patientId)
+activate DS
+
+DS -> PR: findById(patientId)
+activate PR
+PR -> DB: SELECT * FROM patients WHERE id = ?
+activate DB
+DB --> PR: Patient data
+deactivate DB
+PR --> DS: Patient entity
+deactivate PR
+
+DS -> MRR: findByPatientIdOrderByVisitDateDesc(patientId)
+activate MRR
+MRR -> DB: SELECT * FROM medical_records WHERE patient_id = ? ORDER BY visit_date DESC
+activate DB
+DB --> MRR: Medical records
+deactivate DB
+MRR --> DS: List<MedicalRecord>
+deactivate MRR
+
+DS --> DC: PatientDTO with medical history
+deactivate DS
+
+DC --> Doctor: 200 OK + JSON response
+deactivate DC
+
+@enduml
+
+' ============================================
+' SEQUENCE 2: Doctor Updates Medical Record
+' ============================================
+
+@startuml Doctor Updates Medical Record
+
+title Doctor Updates Medical Record with Notes
+
+actor Doctor
+participant "DoctorController" as DC
+participant "DoctorService" as DS
+participant "MedicalRecordRepository" as MRR
+database "Database" as DB
+
+Doctor -> DC: PUT /api/doctors/medical-records/{id}\n{notes, diagnosis, treatment}
+activate DC
+
+DC -> DS: updateMedicalRecord(recordId, updateDTO)
+activate DS
+
+DS -> MRR: findById(recordId)
+activate MRR
+MRR -> DB: SELECT * FROM medical_records WHERE id = ?
+activate DB
+DB --> MRR: Medical record
+deactivate DB
+MRR --> DS: MedicalRecord entity
+deactivate MRR
+
+DS -> DS: Update notes field
+DS -> DS: Update diagnosis, treatment if provided
+
+DS -> MRR: save(medicalRecord)
+activate MRR
+MRR -> DB: UPDATE medical_records SET notes = ?, diagnosis = ?, treatment = ?
+activate DB
+DB --> MRR: Updated record
+deactivate DB
+MRR --> DS: MedicalRecord entity
+deactivate MRR
+
+DS --> DC: MedicalRecordDTO
+deactivate DS
+
+DC --> Doctor: 200 OK + JSON response
+deactivate DC
+
+@enduml
+
+' ============================================
+' SEQUENCE 3: Doctor Creates Appointment for Patient
+' ============================================
+
+@startuml Doctor Creates Appointment for Patient
+
+title Administrator Creates Appointment for Patient
+
+actor Administrator
+participant "AdminController" as AC
+participant "AppointmentService" as AS
+participant "AppointmentRepository" as AR
+participant "PatientRepository" as PR
+participant "DoctorRepository" as DR
+database "Database" as DB
+
+Administrator -> AC: POST /api/admin/appointments\n{patientId, doctorId, dateTime, reason}
+activate AC
+
+AC -> AS: createAppointment(appointmentDTO)
+activate AS
+
+AS -> PR: findById(patientId)
+activate PR
+PR -> DB: SELECT * FROM patients WHERE id = ?
+activate DB
+DB --> PR: Patient data
+deactivate DB
+PR --> AS: Patient entity
+deactivate PR
+
+AS -> DR: findById(doctorId)
+activate DR
+DR -> DB: SELECT * FROM doctors WHERE id = ?
+activate DB
+DB --> DR: Doctor data
+deactivate DB
+DR --> AS: Doctor entity
+deactivate DR
+
+AS -> AR: isSlotAvailable(doctorId, dateTime)
+activate AR
+AR -> DB: SELECT COUNT(*) FROM appointments\nWHERE doctor_id = ? AND appointment_date_time = ?
+activate DB
+DB --> AR: Count
+deactivate DB
+AR --> AS: boolean (available)
+deactivate AR
+
+alt Slot is available
+    AS -> AS: Create Appointment entity
+    AS -> AS: Set status = SCHEDULED
+    
+    AS -> AR: save(appointment)
+    activate AR
+    AR -> DB: INSERT INTO appointments (...)
+    activate DB
+    DB --> AR: Saved appointment with ID
+    deactivate DB
+    AR --> AS: Appointment entity
+    deactivate AR
+    
+    AS --> AC: AppointmentDTO
+    AC --> Administrator: 201 CREATED + JSON response
+else Slot not available
+    AS --> AC: SlotNotAvailableException
+    AC --> Administrator: 400 BAD REQUEST\n"Time slot not available"
+end
+
+deactivate AS
+deactivate AC
+
+@enduml
+
+' ============================================
+' SEQUENCE 4: Doctor Writes Prescription
+' ============================================
+
+@startuml Doctor Writes Prescription
+
+title Doctor Writes Prescription for Patient
+
+actor Doctor
+participant "DoctorController" as DC
+participant "DoctorService" as DS
+participant "PrescriptionRepository" as PR
+participant "PrescriptionItemRepository" as PIR
+participant "MedicationRepository" as MR
+database "Database" as DB
+
+Doctor -> DC: POST /api/doctors/prescriptions\n{patientId, medications[]}
+activate DC
+
+DC -> DS: writePrescription(prescriptionDTO)
+activate DS
+
+DS -> DS: Create Prescription entity
+DS -> DS: Set doctor, patient, date, status = ACTIVE
+
+DS -> PR: save(prescription)
+activate PR
+PR -> DB: INSERT INTO prescriptions (...)
+activate DB
+DB --> PR: Saved prescription with ID
+deactivate DB
+PR --> DS: Prescription entity
+deactivate PR
+
+loop For each medication in list
+    DS -> MR: findById(medicationId)
+    activate MR
+    MR -> DB: SELECT * FROM medications WHERE id = ?
+    activate DB
+    DB --> MR: Medication
+    deactivate DB
+    MR --> DS: Medication entity
+    deactivate MR
+    
+    DS -> DS: Create PrescriptionItem
+    DS -> DS: Set dosage, frequency, quantity
+    
+    DS -> PIR: save(prescriptionItem)
+    activate PIR
+    PIR -> DB: INSERT INTO prescription_items (...)
+    activate DB
+    DB --> PIR: Saved item
+    deactivate DB
+    PIR --> DS: PrescriptionItem entity
+    deactivate PIR
+end
+
+DS --> DC: PrescriptionDTO with items
+deactivate DS
+
+DC --> Doctor: 201 CREATED + JSON response
+deactivate DC
+
+@enduml
+
+' ============================================
+' SEQUENCE 5: Pharmacist Dispenses Prescription
+' ============================================
+
+@startuml Pharmacist Dispenses Prescription
+
+title Pharmacist Dispenses Prescription
+
+actor Pharmacist
+participant "PharmacistController" as PC
+participant "PharmacyService" as PS
+participant "PrescriptionRepository" as PR
+participant "PrescriptionItemRepository" as PIR
+participant "PharmacyStockRepository" as PSR
+database "Database" as DB
+
+Pharmacist -> PC: PUT /api/pharmacy/prescriptions/{id}/dispense
+activate PC
+
+PC -> PS: dispensePrescription(prescriptionId, pharmacistId)
+activate PS
+
+PS -> PR: findById(prescriptionId)
+activate PR
+PR -> DB: SELECT * FROM prescriptions WHERE id = ?
+activate DB
+DB --> PR: Prescription with items
+deactivate DB
+PR --> PS: Prescription entity
+deactivate PR
+
+loop For each prescription item
+    PS -> PSR: findByMedicationId(medicationId)
+    activate PSR
+    PSR -> DB: SELECT * FROM pharmacy_stock WHERE medication_id = ?
+    activate DB
+    DB --> PSR: Stock data
+    deactivate DB
+    PSR --> PS: PharmacyStock entity
+    deactivate PSR
+    
+    alt Stock sufficient
+        PS -> PS: Reduce stock quantity
+        
+        PS -> PSR: save(updatedStock)
+        activate PSR
+        PSR -> DB: UPDATE pharmacy_stock SET quantity = ?
+        activate DB
+        DB --> PSR: Updated
+        deactivate DB
+        deactivate PSR
+        
+        PS -> PS: Mark item as dispensed
+        PS -> PS: Set dispensedAt, dispensedBy
+        
+        PS -> PIR: save(prescriptionItem)
+        activate PIR
+        PIR -> DB: UPDATE prescription_items SET dispensed = true
+        activate DB
+        DB --> PIR: Updated
+        deactivate DB
+        deactivate PIR
+    else Insufficient stock
+        PS --> PC: InsufficientStockException
+        PC --> Pharmacist: 400 BAD REQUEST\n"Insufficient stock"
+    end
+end
+
+PS -> PS: Update prescription status = DISPENSED
+
+PS -> PR: save(prescription)
+activate PR
+PR -> DB: UPDATE prescriptions SET status = 'DISPENSED'
+activate DB
+DB --> PR: Updated
+deactivate DB
+deactivate PR
+
+PS --> PC: Success
+deactivate PS
+
+PC --> Pharmacist: 200 OK\n"Prescription dispensed"
+deactivate PC
+
+@enduml
+
+' ============================================
+' SEQUENCE 6: Admin Views Dashboard
+' ============================================
+
+@startuml Admin Views Dashboard
+
+title Administrator Views Dashboard Statistics
+
+actor Admin
+participant "AdminController" as AC
+participant "StatisticsService" as SS
+participant "UserRepository" as UR
+participant "AppointmentRepository" as AR
+participant "PrescriptionRepository" as PR
+database "Database" as DB
+
+Admin -> AC: GET /api/admin/dashboard
+activate AC
+
+AC -> SS: getDashboardStats()
+activate SS
+
+par Parallel queries for performance
+    SS -> UR: countByRole(DOCTOR)
+    activate UR
+    UR -> DB: SELECT COUNT(*) FROM users WHERE role = 'DOCTOR'
+    activate DB
+    DB --> UR: Count
+    deactivate DB
+    UR --> SS: totalDoctors
+    deactivate UR
+    
+    SS -> UR: countByRole(PATIENT)
+    activate UR
+    UR -> DB: SELECT COUNT(*) FROM users WHERE role = 'PATIENT'
+    activate DB
+    DB --> UR: Count
+    deactivate DB
+    UR --> SS: totalPatients
+    deactivate UR
+    
+    SS -> AR: countByDate(today)
+    activate AR
+    AR -> DB: SELECT COUNT(*) FROM appointments WHERE DATE(appointment_date_time) = CURDATE()
+    activate DB
+    DB --> AR: Count
+    deactivate DB
+    AR --> SS: todayAppointments
+    deactivate AR
+    
+    SS -> PR: countByStatus(ACTIVE)
+    activate PR
+    PR -> DB: SELECT COUNT(*) FROM prescriptions WHERE status = 'ACTIVE'
+    activate DB
+    DB --> PR: Count
+    deactivate DB
+    PR --> SS: activePrescriptions
+    deactivate PR
+end
+
+SS -> SS: Aggregate statistics into DashboardStatsDTO
+
+SS --> AC: DashboardStatsDTO
+deactivate SS
+
+AC --> Admin: 200 OK + JSON response with stats
+deactivate AC
+
+@enduml
+
+' ============================================
+' SEQUENCE 7: Authentication Flow
+' ============================================
+
+@startuml User Authentication Flow
+
+title User Login with JWT Authentication
+
+actor User
+participant "AuthController" as AC
+participant "AuthService" as AS
+participant "UserRepository" as UR
+participant "JwtTokenProvider" as JWT
+database "Database" as DB
+
+User -> AC: POST /api/auth/login\n{username, password, tenantId}
+activate AC
+
+AC -> AS: authenticate(username, password)
+activate AS
+
+AS -> UR: findByUsername(username)
+activate UR
+UR -> DB: SELECT * FROM users WHERE username = ?
+activate DB
+DB --> UR: User data
+deactivate DB
+UR --> AS: User entity
+deactivate UR
+
+AS -> AS: Verify password with BCrypt
+
+alt Password valid
+    AS -> JWT: generateToken(user)
+    activate JWT
+    JWT -> JWT: Create JWT with claims:\n- userId\n- username\n- role\n- tenantId
+    JWT --> AS: JWT token
+    deactivate JWT
+    
+    AS -> UR: updateLastLogin(userId)
+    activate UR
+    UR -> DB: UPDATE users SET last_login = NOW()
+    activate DB
+    DB --> UR: Updated
+    deactivate DB
+    deactivate UR
+    
+    AS --> AC: AuthResponse(token, user)
+    AC --> User: 200 OK\n{token, user, expiresIn}
+else Password invalid
+    AS --> AC: BadCredentialsException
+    AC --> User: 401 UNAUTHORIZED\n"Invalid credentials"
+end
+
+deactivate AS
+deactivate AC
+
+@enduml
+
+@startuml
+@enduml
+
+
+' ============================================
+' SEQUENCE 8: Hospital Director Views Executive Dashboard
+' ============================================
+
+@startuml Hospital Director Views Executive Dashboard
+
+title Hospital Director Views Executive Dashboard
+
+actor "Hospital Director" as Director
+participant "DirectorController" as DC
+participant "DirectorService" as DS
+participant "DoctorRepository" as DR
+participant "PatientRepository" as PR
+participant "AppointmentRepository" as AR
+participant "PharmacyStockRepository" as PSR
+database "Database" as DB
+
+Director -> DC: GET /api/director/dashboard
+activate DC
+
+DC -> DS: getExecutiveDashboard()
+activate DS
+
+par Parallel data collection for dashboard
+    DS -> DR: count()
+    activate DR
+    DR -> DB: SELECT COUNT(*) FROM doctors
+    activate DB
+    DB --> DR: Total doctors
+    deactivate DB
+    DR --> DS: totalDoctors
+    deactivate DR
+    
+    DS -> PR: count()
+    activate PR
+    PR -> DB: SELECT COUNT(*) FROM patients
+    activate DB
+    DB --> PR: Total patients
+    deactivate DB
+    PR --> DS: totalPatients
+    deactivate PR
+    
+    DS -> AR: countByDate(today)
+    activate AR
+    AR -> DB: SELECT COUNT(*) FROM appointments WHERE DATE = CURDATE()
+    activate DB
+    DB --> AR: Today's appointments
+    deactivate DB
+    AR --> DS: todayAppointments
+    deactivate AR
+    
+    DS -> AR: countByMonth(currentMonth)
+    activate AR
+    AR -> DB: SELECT COUNT(*) FROM appointments WHERE MONTH = CURRENT_MONTH
+    activate DB
+    DB --> AR: Monthly appointments
+    deactivate DB
+    AR --> DS: monthlyAppointments
+    deactivate AR
+    
+    DS -> PSR: countLowStockItems()
+    activate PSR
+    PSR -> DB: SELECT COUNT(*) FROM pharmacy_stock WHERE quantity < reorder_level
+    activate DB
+    DB --> PSR: Low stock count
+    deactivate DB
+    PSR --> DS: lowStockCount
+    deactivate PSR
+end
+
+DS -> DS: Calculate KPIs:\n- Doctor utilization rate\n- Patient satisfaction\n- Revenue metrics\n- Performance indicators
+
+DS -> DS: Aggregate data into DirectorDashboardDTO
+
+DS --> DC: DirectorDashboardDTO with:\n- Operational metrics\n- Financial KPIs\n- Quality indicators\n- Alerts & recommendations
+deactivate DS
+
+DC --> Director: 200 OK + JSON response with dashboard data
+deactivate DC
+
+@enduml
+
+' ============================================
+' SEQUENCE 9: Hospital Director Views Doctor Performance
+' ============================================
+
+@startuml Hospital Director Views Doctor Performance
+
+title Hospital Director Analyzes Doctor Performance
+
+actor "Hospital Director" as Director
+participant "DirectorController" as DC
+participant "DirectorService" as DS
+participant "DoctorRepository" as DR
+participant "PatientRepository" as PR
+participant "AppointmentRepository" as AR
+participant "PrescriptionRepository" as PrR
+database "Database" as DB
+
+Director -> DC: GET /api/director/doctors/{doctorId}/performance
+activate DC
+
+DC -> DS: getDoctorPerformance(doctorId)
+activate DS
+
+DS -> DR: findById(doctorId)
+activate DR
+DR -> DB: SELECT * FROM doctors WHERE id = ?
+activate DB
+DB --> DR: Doctor data
+deactivate DB
+DR --> DS: Doctor entity
+deactivate DR
+
+par Collect performance metrics
+    DS -> PR: countByDoctorId(doctorId)
+    activate PR
+    PR -> DB: SELECT COUNT(*) FROM patients WHERE doctor_id = ?
+    activate DB
+    DB --> PR: Patient count
+    deactivate DB
+    PR --> DS: totalPatients
+    deactivate PR
+    
+    DS -> AR: countByDoctorId(doctorId)
+    activate AR
+    AR -> DB: SELECT COUNT(*) FROM appointments WHERE doctor_id = ?
+    activate DB
+    DB --> AR: Appointment count
+    deactivate DB
+    AR --> DS: totalAppointments
+    deactivate AR
+    
+    DS -> AR: countByDoctorIdAndStatus(doctorId, COMPLETED)
+    activate AR
+    AR -> DB: SELECT COUNT(*) FROM appointments\nWHERE doctor_id = ? AND status = 'COMPLETED'
+    activate DB
+    DB --> AR: Completed count
+    deactivate DB
+    AR --> DS: completedAppointments
+    deactivate AR
+    
+    DS -> AR: countByDoctorIdAndStatus(doctorId, CANCELLED)
+    activate AR
+    AR -> DB: SELECT COUNT(*) FROM appointments\nWHERE doctor_id = ? AND status = 'CANCELLED'
+    activate DB
+    DB --> AR: Cancelled count
+    deactivate DB
+    AR --> DS: cancelledAppointments
+    deactivate AR
+    
+    DS -> PrR: countByDoctorId(doctorId)
+    activate PrR
+    PrR -> DB: SELECT COUNT(*) FROM prescriptions WHERE doctor_id = ?
+    activate DB
+    DB --> PrR: Prescription count
+    deactivate DB
+    PrR --> DS: totalPrescriptions
+    deactivate PrR
+end
+
+DS -> DS: Calculate performance rates:\n- Completion rate\n- Cancellation rate\n- No-show rate\n- Average patients per day\n- Productivity metrics
+
+DS -> DS: Create DoctorPerformanceDTO
+
+DS --> DC: DoctorPerformanceDTO with metrics
+deactivate DS
+
+DC --> Director: 200 OK + JSON response with performance data
+deactivate DC
+
+@enduml
+
+@startuml
+@enduml

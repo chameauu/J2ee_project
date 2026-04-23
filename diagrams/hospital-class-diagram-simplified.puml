@@ -1,0 +1,166 @@
+@startuml Hospital Management System - Simplified Class Diagram
+
+skinparam classAttributeIconSize 0
+skinparam class {
+    BackgroundColor #E8F5E9
+    BorderColor #4CAF50
+    ArrowColor #2196F3
+    FontSize 12
+}
+
+' ============================================
+' CORE USER CLASSES
+' ============================================
+
+abstract class User {
+    # id: Long
+    # username: String
+    # email: String
+    # role: UserRole
+}
+
+class Doctor {
+    - specialization: String
+    - licenseNumber: String
+}
+
+class Patient {
+    - firstName: String
+    - lastName: String
+    - dateOfBirth: LocalDate
+    - bloodType: String
+}
+
+class Pharmacist {
+    - licenseNumber: String
+    - pharmacyName: String
+}
+
+class Administrator {
+    - department: String
+}
+
+class HospitalDirector {
+    - hospitalName: String
+    - credentials: String
+}
+
+' ============================================
+' MEDICAL ENTITIES
+' ============================================
+
+class MedicalRecord {
+    - id: Long
+    - visitDate: LocalDateTime
+    - diagnosis: String
+    - treatment: String
+    - notes: String
+}
+
+
+
+class Appointment {
+    - id: Long
+    - appointmentDateTime: LocalDateTime
+    - status: AppointmentStatus
+    - type: AppointmentType
+}
+
+class Prescription {
+    - id: Long
+    - prescribedDate: LocalDateTime
+    - status: PrescriptionStatus
+}
+
+class PrescriptionItem {
+    - id: Long
+    - dosage: String
+    - frequency: String
+    - quantity: Integer
+}
+
+class Medication {
+    - id: Long
+    - name: String
+    - type: MedicationType
+}
+
+class PharmacyStock {
+    - id: Long
+    - quantity: Integer
+    - expiryDate: LocalDate
+}
+
+' ============================================
+' INHERITANCE
+' ============================================
+
+User <|-- Doctor
+User <|-- Patient
+User <|-- Pharmacist
+User <|-- Administrator
+User <|-- HospitalDirector
+
+' ============================================
+' MAIN RELATIONSHIPS
+' ============================================
+
+' Patient relationships
+Patient "1" -- "0..*" MedicalRecord : "has medical history"
+Patient "1" -- "0..*" Appointment : "books"
+Patient "1" -- "0..*" Prescription : "receives"
+
+' Doctor relationships
+Doctor "1" -- "0..*" MedicalRecord : "creates"
+Doctor "1" -- "0..*" Appointment : "schedules"
+Doctor "1" -- "0..*" Prescription : "prescribes"
+
+' Medical Record relationships
+MedicalRecord "1" -- "0..*" Prescription : "generates"
+
+' Prescription relationships
+Prescription "1" *-- "1..*" PrescriptionItem : "contains"
+PrescriptionItem "0..*" -- "1" Medication : "references"
+
+' Pharmacy relationships
+Medication "1" -- "0..*" PharmacyStock : "has stock"
+Pharmacist "1" -- "0..*" PrescriptionItem : "dispenses"
+
+' ============================================
+' KEY NOTES
+' ============================================
+
+note top of User
+    **Base User Class**
+    All system users inherit from this
+    Role-based access control
+    Roles: DOCTOR, PATIENT, PHARMACIST, ADMIN, DIRECTOR
+end note
+
+note right of MedicalRecord
+    **Central Medical Entity**
+    Links patient visits with:
+    - Doctor notes (text field)
+    - Prescriptions
+    - Diagnosis and treatment
+end note
+
+note bottom of Prescription
+    **Prescription Flow**
+    Doctor writes → Patient receives
+    → Pharmacist dispenses
+end note
+
+note right of Appointment
+    **Appointment Management**
+    Created by: Doctor or Administrator
+    Viewed by: Patient (read-only)
+end note
+
+note left of PharmacyStock
+    **Inventory Management**
+    Tracks stock levels and
+    expiry dates
+end note
+
+@enduml

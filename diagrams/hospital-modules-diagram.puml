@@ -1,0 +1,322 @@
+@startuml Hospital Management System - Module Diagrams
+
+' ============================================
+' DOCTOR MODULE
+' ============================================
+
+package "Doctor Module" #E8F5E9 {
+    
+    class Doctor {
+        - id: Long
+        - specialization: String
+        - licenseNumber: String
+        --
+        + viewPatients(): List<Patient>
+        + viewPatientFile(patientId): MedicalRecord
+        + updateMedicalRecord(recordId, notes): MedicalRecord
+        + viewAppointments(): List<Appointment>
+        + writePrescription(prescription): Prescription
+        + viewStatistics(): DoctorStats
+    }
+    
+    class DoctorStats {
+        - totalPatients: Long
+        - todayAppointments: Long
+        - completedAppointments: Long
+        - activePrescriptions: Long
+    }
+    
+    Doctor ..> DoctorStats : generates
+}
+
+' ============================================
+' PATIENT MODULE
+' ============================================
+
+package "Patient Module" #FFF3E0 {
+    
+    class Patient {
+        - id: Long
+        - firstName: String
+        - lastName: String
+        - dateOfBirth: LocalDate
+        --
+        + viewMedicalHistory(): List<MedicalRecord>
+        + viewAppointments(): List<Appointment>
+        + viewPrescriptions(): List<Prescription>
+    }
+    
+    class PatientProfile {
+        - bloodType: String
+        - allergies: List<String>
+        - emergencyContact: String
+        - insuranceNumber: String
+    }
+    
+    Patient "1" -- "1" PatientProfile
+}
+
+' ============================================
+' APPOINTMENT MODULE
+' ============================================
+
+package "Appointment Module" #E3F2FD {
+    
+    class Appointment {
+        - id: Long
+        - appointmentDateTime: LocalDateTime
+        - status: AppointmentStatus
+        - type: AppointmentType
+        --
+        + create(): void
+        + updateStatus(status): void
+        + complete(): void
+    }
+    
+    enum AppointmentStatus {
+        SCHEDULED
+        COMPLETED
+        CANCELLED
+        NO_SHOW
+    }
+    
+    enum AppointmentType {
+        CONSULTATION
+        FOLLOW_UP
+        EMERGENCY
+    }
+    
+    Appointment --> AppointmentStatus
+    Appointment --> AppointmentType
+}
+
+' ============================================
+' MEDICAL RECORDS MODULE
+' ============================================
+
+package "Medical Records Module" #F3E5F5 {
+    
+    class MedicalRecord {
+        - id: Long
+        - visitDate: LocalDateTime
+        - chiefComplaint: String
+        - diagnosis: String
+        - treatment: String
+        - notes: String
+        --
+        + updateNotes(notes): void
+        + generatePrescription(): Prescription
+    }
+}
+
+' ============================================
+' PRESCRIPTION MODULE
+' ============================================
+
+package "Prescription Module" #FCE4EC {
+    
+    class Prescription {
+        - id: Long
+        - prescribedDate: LocalDateTime
+        - status: PrescriptionStatus
+        --
+        + addItem(item): void
+        + isValid(): Boolean
+        + markAsDispensed(): void
+    }
+    
+    class PrescriptionItem {
+        - id: Long
+        - dosage: String
+        - frequency: String
+        - quantity: Integer
+        --
+        + dispense(pharmacist): void
+    }
+    
+    class Medication {
+        - id: Long
+        - name: String
+        - type: MedicationType
+        - strength: String
+    }
+    
+    Prescription "1" *-- "1..*" PrescriptionItem
+    PrescriptionItem "0..*" -- "1" Medication
+}
+
+' ============================================
+' PHARMACY MODULE
+' ============================================
+
+package "Pharmacy Module" #E0F2F1 {
+    
+    class Pharmacist {
+        - id: Long
+        - licenseNumber: String
+        - pharmacyName: String
+        --
+        + viewPrescriptions(): List<Prescription>
+        + dispensePrescription(prescriptionId): void
+        + checkStock(medicationId): PharmacyStock
+        + manageInventory(): void
+    }
+    
+    class PharmacyStock {
+        - id: Long
+        - quantity: Integer
+        - reorderLevel: Integer
+        - expiryDate: LocalDate
+        --
+        + isLowStock(): Boolean
+        + isExpiringSoon(): Boolean
+        + reduceStock(amount): void
+        + addStock(amount): void
+    }
+    
+    Pharmacist ..> PharmacyStock : manages
+}
+
+' ============================================
+' ADMIN MODULE
+' ============================================
+
+package "Admin Module" #FFF9C4 {
+    
+    class Administrator {
+        - id: Long
+        - department: String
+        - accessLevel: String
+        --
+        + viewDashboard(): DashboardStats
+        + manageUsers(): void
+        + generateReports(): void
+        + viewSystemStats(): SystemStats
+    }
+    
+    class DashboardStats {
+        - totalDoctors: Long
+        - totalPatients: Long
+        - todayAppointments: Long
+        - activePrescriptions: Long
+        --
+        + getChartData(type): Map
+        + getTrends(): List<TrendData>
+    }
+    
+    class SystemStats {
+        - totalUsers: Long
+        - activeUsers: Long
+        - systemUptime: Duration
+        - databaseSize: Long
+    }
+    
+    Administrator ..> DashboardStats : views
+    Administrator ..> SystemStats : monitors
+}
+
+' ============================================
+' CROSS-MODULE RELATIONSHIPS
+' ============================================
+
+Doctor "1" -- "0..*" Appointment : creates
+Patient "1" -- "0..*" Appointment : has
+
+Doctor "1" -- "0..*" MedicalRecord : creates
+Patient "1" -- "0..*" MedicalRecord : has
+
+Doctor "1" -- "0..*" Prescription : writes
+Patient "1" -- "0..*" Prescription : receives
+
+Pharmacist "1" -- "0..*" PrescriptionItem : dispenses
+
+Medication "1" -- "0..*" PharmacyStock : has
+
+' ============================================
+' NOTES
+' ============================================
+
+note as N1
+    **Module Organization**
+    Each module represents a distinct
+    functional area with its own
+    entities and business logic
+end note
+
+note as N2
+    **Cross-Module Communication**
+    Modules interact through
+    well-defined service interfaces
+    following the Service Layer pattern
+end note
+
+@enduml
+
+
+' ============================================
+' HOSPITAL DIRECTOR MODULE
+' ============================================
+
+package "Hospital Director Module" #E1BEE7 {
+    
+    class HospitalDirector {
+        - id: Long
+        - hospitalName: String
+        - credentials: String
+        --
+        + viewExecutiveDashboard(): DirectorDashboard
+        + viewAllDoctors(): List<Doctor>
+        + viewDoctorPerformance(doctorId): DoctorPerformance
+        + viewAllPatients(): List<Patient>
+        + viewPatientDemographics(): Demographics
+        + viewPharmacyInventory(): List<PharmacyStock>
+        + viewAnalytics(type): AnalyticsData
+        + generateReports(type): Report
+    }
+    
+    class DirectorDashboard {
+        - totalDoctors: Long
+        - totalPatients: Long
+        - monthlyRevenue: Double
+        - doctorUtilizationRate: Double
+        - patientSatisfactionRate: Double
+        - lowStockAlerts: Integer
+        --
+        + getKPIs(): Map<String, Object>
+        + getTrends(): List<TrendData>
+    }
+    
+    class DoctorPerformance {
+        - doctorId: Long
+        - totalPatients: Long
+        - completedAppointments: Long
+        - completionRate: Double
+        - averagePatientsPerDay: Double
+        --
+        + getMetrics(): Map<String, Object>
+    }
+    
+    HospitalDirector ..> DirectorDashboard : views
+    HospitalDirector ..> DoctorPerformance : analyzes
+}
+
+' ============================================
+' DIRECTOR CROSS-MODULE ACCESS (READ-ONLY)
+' ============================================
+
+HospitalDirector ..> Doctor : views
+HospitalDirector ..> Patient : views
+HospitalDirector ..> PharmacyStock : monitors
+HospitalDirector ..> Appointment : analyzes
+HospitalDirector ..> Prescription : reviews
+
+note as DirectorNote
+    **Hospital Director Access**
+    - Read-only access to all modules
+    - Executive dashboard with KPIs
+    - Performance analytics
+    - Strategic decision support
+    - No direct data modification
+end note
+
+@enduml
