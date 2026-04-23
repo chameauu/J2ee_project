@@ -14,6 +14,8 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -124,5 +126,125 @@ class PatientServiceImplTest {
         // When & Then
         assertThrows(ResourceNotFoundException.class,
                 () -> patientService.getPatientById(patientId));
+    }
+
+    @Test
+    void shouldUpdatePatient() {
+        // Given
+        Long patientId = 1L;
+        PatientDTO dto = new PatientDTO();
+        dto.setFirstName("UpdatedName");
+        dto.setLastName("UpdatedLastName");
+        dto.setEmail("updated@example.com");
+        dto.setPhone("+9999999999");
+
+        Patient existingPatient = new Patient();
+        existingPatient.setId(patientId);
+        existingPatient.setFirstName("OldName");
+        existingPatient.setLastName("OldLastName");
+        existingPatient.setEmail("old@example.com");
+
+        Patient updatedPatient = new Patient();
+        updatedPatient.setId(patientId);
+        updatedPatient.setFirstName("UpdatedName");
+        updatedPatient.setLastName("UpdatedLastName");
+        updatedPatient.setEmail("updated@example.com");
+
+        PatientDTO updatedDTO = new PatientDTO();
+        updatedDTO.setId(patientId);
+        updatedDTO.setFirstName("UpdatedName");
+        updatedDTO.setLastName("UpdatedLastName");
+
+        when(patientRepository.findById(patientId)).thenReturn(Optional.of(existingPatient));
+        when(patientRepository.save(any(Patient.class))).thenReturn(updatedPatient);
+        when(patientMapper.toDTO(updatedPatient)).thenReturn(updatedDTO);
+
+        // When
+        PatientDTO result = patientService.updatePatient(patientId, dto);
+
+        // Then
+        assertNotNull(result);
+        assertEquals("UpdatedName", result.getFirstName());
+        assertEquals("UpdatedLastName", result.getLastName());
+        verify(patientRepository).save(any(Patient.class));
+    }
+
+    @Test
+    void shouldThrowExceptionWhenUpdatingNonExistentPatient() {
+        // Given
+        Long patientId = 999L;
+        PatientDTO dto = new PatientDTO();
+        dto.setFirstName("John");
+
+        when(patientRepository.findById(patientId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThrows(ResourceNotFoundException.class,
+                () -> patientService.updatePatient(patientId, dto));
+        verify(patientRepository, never()).save(any());
+    }
+
+    @Test
+    void shouldDeletePatient() {
+        // Given
+        Long patientId = 1L;
+        Patient patient = new Patient();
+        patient.setId(patientId);
+        patient.setFirstName("John");
+
+        when(patientRepository.findById(patientId)).thenReturn(Optional.of(patient));
+
+        // When
+        patientService.deletePatient(patientId);
+
+        // Then
+        verify(patientRepository).delete(patient);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenDeletingNonExistentPatient() {
+        // Given
+        Long patientId = 999L;
+        when(patientRepository.findById(patientId)).thenReturn(Optional.empty());
+
+        // When & Then
+        assertThrows(ResourceNotFoundException.class,
+                () -> patientService.deletePatient(patientId));
+        verify(patientRepository, never()).delete(any());
+    }
+
+    @Test
+    void shouldGetAllPatients() {
+        // Given
+        Patient patient1 = new Patient();
+        patient1.setId(1L);
+        patient1.setFirstName("John");
+
+        Patient patient2 = new Patient();
+        patient2.setId(2L);
+        patient2.setFirstName("Jane");
+
+        List<Patient> patients = Arrays.asList(patient1, patient2);
+
+        PatientDTO dto1 = new PatientDTO();
+        dto1.setId(1L);
+        dto1.setFirstName("John");
+
+        PatientDTO dto2 = new PatientDTO();
+        dto2.setId(2L);
+        dto2.setFirstName("Jane");
+
+        when(patientRepository.findAll()).thenReturn(patients);
+        when(patientMapper.toDTO(patient1)).thenReturn(dto1);
+        when(patientMapper.toDTO(patient2)).thenReturn(dto2);
+
+        // When
+        List<PatientDTO> result = patientService.getAllPatients();
+
+        // Then
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("John", result.get(0).getFirstName());
+        assertEquals("Jane", result.get(1).getFirstName());
     }
 }
