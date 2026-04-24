@@ -5,6 +5,5 @@ package com.hospital.management.enums;
  */
 public enum AppointmentType {
     CONSULTATION,
-    FOLLOW_UP,
-    EMERGENCY
+    FOLLOW_UP
 }
