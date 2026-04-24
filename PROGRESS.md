@@ -1266,3 +1266,155 @@ Following the roadmap Phase 6:
 **Last Updated**: April 24, 2026  
 **Current Phase**: Phase 5.1 Complete → Ready for Phase 6 (Prescriptions) or Enhancements  
 **Project Status**: 🟢 Active Development - Appointments Module Complete with Conflict Detection! 🎉
+
+
+---
+
+## ✅ Phase 6: Prescriptions Module (COMPLETE)
+
+### Entity Created:
+- ✅ `Prescription.java` - Prescription entity with:
+  - @ManyToOne relationships to Patient, Doctor, MedicalRecord
+  - Fields: prescribedDate, validUntil, status, medicationName, dosage, frequency, durationDays
+  - LAZY fetching for all relationships
+  - JPA auditing (createdAt, updatedAt)
+
+### Repository Created:
+- ✅ `PrescriptionRepository.java` - Spring Data JPA repository with custom queries:
+  - `findByPatientIdOrderByPrescribedDateDesc` - Get patient's prescriptions
+  - `findByDoctorIdOrderByPrescribedDateDesc` - Get doctor's prescriptions
+  - `findByPatientIdAndStatusOrderByPrescribedDateDesc` - Get patient's active prescriptions
+  - `findByMedicalRecordIdOrderByPrescribedDateDesc` - Get prescriptions for a medical record
+
+### Service Layer Created:
+- ✅ `IPrescriptionService.java` - Service interface with 9 methods
+- ✅ `PrescriptionServiceImpl.java` - Service implementation with:
+  - Create prescription with patient/doctor/medical record validation
+  - Get prescription by ID
+  - Update prescription details
+  - Update prescription status
+  - Delete prescription
+  - Get patient prescriptions
+  - Get doctor prescriptions
+  - Get patient active prescriptions
+  - Get medical record prescriptions
+
+### Controller Created:
+- ✅ `PrescriptionController.java` - REST controller with 8 endpoints:
+  - POST `/api/prescriptions` - Create (DOCTOR only)
+  - GET `/api/prescriptions/{id}` - Read (ADMIN, DOCTOR, PHARMACIST, PATIENT)
+  - PUT `/api/prescriptions/{id}` - Update (DOCTOR only)
+  - PUT `/api/prescriptions/{id}/status` - Update status (DOCTOR, PHARMACIST)
+  - DELETE `/api/prescriptions/{id}` - Delete (ADMIN, DOCTOR)
+  - GET `/api/patients/{patientId}/prescriptions` - List patient's (ADMIN, DOCTOR, PHARMACIST, PATIENT)
+  - GET `/api/patients/{patientId}/prescriptions/active` - List active (ADMIN, DOCTOR, PHARMACIST, PATIENT)
+  - GET `/api/doctors/{doctorId}/prescriptions` - List doctor's (ADMIN, DOCTOR)
+  - GET `/api/medical-records/{medicalRecordId}/prescriptions` - List by medical record (ADMIN, DOCTOR, PHARMACIST)
+
+### DTO & Mapper Created:
+- ✅ `PrescriptionDTO.java` - Data transfer object with validation
+- ✅ `PrescriptionMapper.java` - MapStruct mapper for entity ↔ DTO conversion
+
+### Tests Created:
+- ✅ `PrescriptionServiceImplTest.java` - 14 unit tests (ALL PASSING ✅):
+  1. Create prescription successfully
+  2. Create fails when patient not found
+  3. Create fails when doctor not found
+  4. Create fails when medical record not found
+  5. Create without medical record successfully
+  6. Get prescription by ID
+  7. Get prescription not found throws exception
+  8. Update prescription
+  9. Update prescription status
+  10. Delete prescription
+  11. Get patient prescriptions
+  12. Get doctor prescriptions
+  13. Get patient active prescriptions
+  14. Get medical record prescriptions
+
+### Role-Based Access Control:
+| Operation | ADMIN | DOCTOR | PHARMACIST | PATIENT | Rationale |
+|-----------|-------|--------|------------|---------|-----------|
+| Create | ❌ | ✅ | ❌ | ❌ | Only doctors prescribe medication |
+| Read | ✅ | ✅ | ✅ | ✅ | All roles need to view prescriptions |
+| Update | ❌ | ✅ | ❌ | ❌ | Only prescribing doctor can modify |
+| Update Status | ❌ | ✅ | ✅ | ❌ | Doctor/Pharmacist manage status |
+| Delete | ✅ | ✅ | ❌ | ❌ | Admin/Doctor can remove prescriptions |
+| List Patient's | ✅ | ✅ | ✅ | ✅ | All roles need patient prescription history |
+| List Active | ✅ | ✅ | ✅ | ✅ | View currently valid prescriptions |
+| List Doctor's | ✅ | ✅ | ❌ | ❌ | Doctor views their prescriptions |
+| List by Medical Record | ✅ | ✅ | ✅ | ❌ | Clinical staff view record prescriptions |
+
+### Key Features:
+- **Referential Integrity**: Validates patient, doctor, and medical record exist before creating prescription
+- **Optional Medical Record**: Prescription can be created without linking to a medical record
+- **Status Management**: Separate endpoint for updating prescription status (ACTIVE, DISPENSED, EXPIRED, CANCELLED)
+- **Multiple Query Methods**: Find prescriptions by patient, doctor, medical record, or status
+- **Comprehensive Validation**: All required fields validated with Jakarta Validation annotations
+- **Audit Trail**: Automatic createdAt and updatedAt timestamps
+
+### Test Results:
+```
+Tests run: 14, Failures: 0, Errors: 0, Skipped: 0
+✅ ALL PRESCRIPTION SERVICE TESTS PASSING
+```
+
+### Design Decisions:
+1. **Simplified Prescription Model**: Single entity with medication details (not separate PrescriptionItem/Medication entities)
+2. **Optional Medical Record**: Prescriptions can exist independently or be linked to a medical record
+3. **Status-Based Workflow**: Prescription status tracks lifecycle (ACTIVE → DISPENSED/EXPIRED/CANCELLED)
+4. **Doctor-Centric Creation**: Only doctors can create/update prescriptions (business rule)
+5. **Pharmacist Status Updates**: Pharmacists can update status (e.g., mark as DISPENSED)
+6. **Comprehensive Access**: All roles can view prescriptions (with appropriate filtering)
+
+### Production Enhancements Needed:
+- Add ownership validation (doctor can only update their own prescriptions)
+- Add prescription expiry automation (scheduled job to mark expired)
+- Add medication database with drug interactions checking
+- Add prescription refill tracking
+- Add electronic signature for prescriptions
+- Add prescription printing/PDF generation
+
+---
+
+## 📊 Overall Progress Summary
+
+### Completed Phases:
+- ✅ Phase 0: Project Setup
+- ✅ Phase 1.1: Exception Handling
+- ✅ Phase 1.2: Base Enumerations
+- ✅ Phase 2.1: Patient CRUD
+- ✅ Phase 2.2: Doctor CRUD
+- ✅ Phase 2.3: Pharmacist CRUD
+- ✅ Phase 3.1: JWT Authentication
+- ✅ Phase 3.2: Role-Based Access Control
+- ✅ Phase 4.1: Medical Records Module
+- ✅ Phase 5.1: Appointments Module
+- ✅ Phase 6: Prescriptions Module
+
+### Total Entities: 6
+1. Patient
+2. Doctor
+3. Pharmacist
+4. MedicalRecord
+5. Appointment
+6. Prescription
+
+### Total Tests: 113
+- Unit Tests: 63 (ALL PASSING ✅)
+  - GlobalExceptionHandler: 5 tests
+  - PatientService: 9 tests
+  - DoctorService: 11 tests
+  - PharmacistService: 10 tests
+  - JwtTokenProvider: 6 tests
+  - MedicalRecordService: 9 tests
+  - AppointmentService: 10 tests
+  - PrescriptionService: 14 tests
+- Integration Tests: 50 (some failing due to pre-existing issues)
+- Context Load: 1 test
+
+### Next Steps:
+- Fix integration test issues (MedicalRecordControllerIntegrationTest, JWT authentication)
+- Create integration tests for PrescriptionController
+- Generate AntiVibe deep dive for Phase 6
+- Continue with remaining phases from roadmap
