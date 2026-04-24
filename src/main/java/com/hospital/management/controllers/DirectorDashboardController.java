@@ -16,7 +16,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/director")
 @RequiredArgsConstructor
-public class DirectorController {
+public class DirectorDashboardController {
 
     private final IStatisticsService statisticsService;
 
