@@ -19,4 +19,7 @@ public interface MedicalRecordRepository extends JpaRepository<MedicalRecord, Lo
 
     @Query("SELECT COUNT(DISTINCT mr.patient.id) FROM MedicalRecord mr WHERE mr.doctor.id = :doctorId")
     Long countDistinctPatientsByDoctorId(@Param("doctorId") Long doctorId);
+
+    @Query("SELECT COUNT(DISTINCT mr.patient.id) FROM MedicalRecord mr")
+    Long countDistinctPatients();
 }

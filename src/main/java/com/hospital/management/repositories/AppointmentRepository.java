@@ -52,4 +52,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     Long countByDoctorIdAndAppointmentDateTimeBetween(Long doctorId, LocalDateTime startTime, LocalDateTime endTime);
 
     Long countByDoctorIdAndStatus(Long doctorId, AppointmentStatus status);
+
+    Long countByStatusAndAppointmentDateTimeBetween(AppointmentStatus status, LocalDateTime startTime, LocalDateTime endTime);
+
+    @Query("SELECT COUNT(DISTINCT a.doctor.id) FROM Appointment a WHERE a.appointmentDateTime BETWEEN :startTime AND :endTime")
+    Long countDistinctDoctorsByAppointmentDateTimeBetween(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
 }
