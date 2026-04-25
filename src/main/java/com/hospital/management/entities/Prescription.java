@@ -11,6 +11,8 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "prescriptions")
@@ -46,6 +48,7 @@ public class Prescription {
     @Column(nullable = false)
     private PrescriptionStatus status;
 
+    // Legacy fields for backward compatibility (kept for existing prescriptions)
     private String medicationName;
 
     private String dosage;
@@ -60,6 +63,9 @@ public class Prescription {
     @Column(columnDefinition = "TEXT")
     private String notes;
 
+    @OneToMany(mappedBy = "prescription", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<PrescriptionItem> items = new ArrayList<>();
+
     @CreatedDate
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
@@ -67,4 +73,23 @@ public class Prescription {
     @LastModifiedDate
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+
+    // Business logic methods
+    public boolean isValid() {
+        return validUntil.isAfter(LocalDate.now()) || validUntil.isEqual(LocalDate.now());
+    }
+
+    public void markAsDispensed() {
+        this.status = PrescriptionStatus.DISPENSED;
+    }
+
+    public void addItem(PrescriptionItem item) {
+        items.add(item);
+        item.setPrescription(this);
+    }
+
+    public void removeItem(PrescriptionItem item) {
+        items.remove(item);
+        item.setPrescription(null);
+    }
 }
