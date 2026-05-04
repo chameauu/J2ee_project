@@ -54,15 +54,18 @@ public class AdministratorController {
     }
 
     // Phase 10.3: Hospital-scoped queries
+    // Phase 10.4: Added authorization checks
     @GetMapping("/hospital/{hospitalId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR') and " +
+                  "@hospitalAuthorizationService.canAccessHospital(#hospitalId, authentication)")
     public ResponseEntity<List<AdministratorDTO>> getAdministratorsByHospital(@PathVariable Long hospitalId) {
         List<AdministratorDTO> administrators = administratorService.getAdministratorsByHospital(hospitalId);
         return ResponseEntity.ok(administrators);
     }
 
     @GetMapping("/hospital/{hospitalId}/count")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR') and " +
+                  "@hospitalAuthorizationService.canAccessHospital(#hospitalId, authentication)")
     public ResponseEntity<Long> countAdministratorsByHospital(@PathVariable Long hospitalId) {
         Long count = administratorService.countAdministratorsByHospital(hospitalId);
         return ResponseEntity.ok(count);

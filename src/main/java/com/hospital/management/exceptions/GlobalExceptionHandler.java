@@ -5,6 +5,7 @@ import com.hospital.management.dto.ValidationErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -86,6 +87,26 @@ public class GlobalExceptionHandler {
         ErrorResponse error = new ErrorResponse(
                 HttpStatus.FORBIDDEN.value(),
                 ex.getMessage(),
+                LocalDateTime.now(),
+                request.getRequestURI()
+        );
+        
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+    
+    /**
+     * Handle Spring Security AuthorizationDeniedException - 403 Forbidden
+     * This is thrown by @PreAuthorize when authorization fails.
+     * Phase 10.4: Hospital-Scoped Authorization Rules
+     */
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ErrorResponse> handleAuthorizationDenied(
+            AuthorizationDeniedException ex,
+            HttpServletRequest request) {
+        
+        ErrorResponse error = new ErrorResponse(
+                HttpStatus.FORBIDDEN.value(),
+                "Access denied: You do not have permission to access this resource",
                 LocalDateTime.now(),
                 request.getRequestURI()
         );

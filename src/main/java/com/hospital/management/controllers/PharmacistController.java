@@ -58,15 +58,18 @@ public class PharmacistController {
     }
 
     // Phase 10.3: Hospital-scoped queries
+    // Phase 10.4: Added authorization checks
     @GetMapping("/hospital/{hospitalId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PHARMACIST')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PHARMACIST') and " +
+                  "@hospitalAuthorizationService.canAccessHospital(#hospitalId, authentication)")
     public ResponseEntity<List<PharmacistDTO>> getPharmacistsByHospital(@PathVariable Long hospitalId) {
         List<PharmacistDTO> pharmacists = pharmacistService.getPharmacistsByHospital(hospitalId);
         return ResponseEntity.ok(pharmacists);
     }
 
     @GetMapping("/hospital/{hospitalId}/count")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR') and " +
+                  "@hospitalAuthorizationService.canAccessHospital(#hospitalId, authentication)")
     public ResponseEntity<Long> countPharmacistsByHospital(@PathVariable Long hospitalId) {
         Long count = pharmacistService.countPharmacistsByHospital(hospitalId);
         return ResponseEntity.ok(count);

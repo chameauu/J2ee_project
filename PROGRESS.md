@@ -3248,6 +3248,153 @@ public ResponseEntity<Long> countPatientsByHospital(@PathVariable Long hospitalI
   - 4 new integration tests (hospital-scoped endpoints)
   - 0 failures
   - 2 skipped (appropriately disabled)
+
+---
+
+## ✅ Phase 10.4: Hospital-Scoped Authorization Rules (COMPLETE)
+
+**Date Completed**: May 4, 2026  
+**Status**: ✅ COMPLETE  
+**Tests**: All 319 tests passing (0 failures, 2 skipped)  
+**Success Rate**: 100%
+
+### Purpose
+Implement fine-grained authorization to prevent cross-hospital data access:
+- Directors can only access their own hospital's data
+- Admins can access any hospital's data
+- Authorization checks integrated with @PreAuthorize
+- Proper 403 Forbidden responses for unauthorized access
+
+### Security Component Created:
+- ✅ `HospitalAuthorizationService.java` - Authorization service with 5 methods
+
+**Authorization Methods**:
+```java
+@Service("hospitalAuthorizationService")
+public class HospitalAuthorizationService {
+    
+    // Check if user is director of specific hospital
+    public boolean isDirectorOfHospital(Long hospitalId, String userEmail);
+    
+    // Check if user belongs to specific hospital
+    public boolean belongsToHospital(Long hospitalId, String userEmail);
+    
+    // Check if user can access hospital (ADMIN or belongs to hospital)
+    public boolean canAccessHospital(Long hospitalId, Authentication authentication);
+    
+    // Check if user is a hospital director
+    public boolean isHospitalDirector(String userEmail);
+    
+    // Get user's hospital ID
+    public Optional<Long> getUserHospitalId(String userEmail);
+}
+```
+
+### Controllers Updated (5 files):
+- ✅ `PatientController.java` - Added authorization to hospital-scoped endpoints
+- ✅ `DoctorController.java` - Added authorization to hospital-scoped endpoints
+- ✅ `PharmacistController.java` - Added authorization to hospital-scoped endpoints
+- ✅ `AdministratorController.java` - Added authorization to hospital-scoped endpoints
+- ✅ `HospitalDirectorController.java` - Added authorization to hospital-scoped endpoints
+
+**Authorization Pattern**:
+```java
+@GetMapping("/hospital/{hospitalId}")
+@PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'DOCTOR', 'PHARMACIST') and " +
+              "@hospitalAuthorizationService.canAccessHospital(#hospitalId, authentication)")
+public ResponseEntity<List<PatientDTO>> getPatientsByHospital(@PathVariable Long hospitalId) {
+    List<PatientDTO> patients = patientService.getPatientsByHospital(hospitalId);
+    return ResponseEntity.ok(patients);
+}
+
+@GetMapping("/hospital/{hospitalId}/count")
+@PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR') and " +
+              "@hospitalAuthorizationService.canAccessHospital(#hospitalId, authentication)")
+public ResponseEntity<Long> countPatientsByHospital(@PathVariable Long hospitalId) {
+    Long count = patientService.countPatientsByHospital(hospitalId);
+    return ResponseEntity.ok(count);
+}
+```
+
+### Exception Handler Updated:
+- ✅ `GlobalExceptionHandler.java` - Added handler for `AuthorizationDeniedException`
+
+**Exception Handling**:
+```java
+@ExceptionHandler(AuthorizationDeniedException.class)
+public ResponseEntity<ErrorResponse> handleAuthorizationDenied(
+        AuthorizationDeniedException ex,
+        HttpServletRequest request) {
+    
+    ErrorResponse error = new ErrorResponse(
+            HttpStatus.FORBIDDEN.value(),
+            "Access denied: You do not have permission to access this resource",
+            LocalDateTime.now(),
+            request.getRequestURI()
+    );
+    
+    return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+}
+```
+
+### Test Configuration Created:
+- ✅ `SecurityTestConfig.java` - Test configuration with full security enabled
+
+### Tests Created:
+- ✅ `HospitalAuthorizationServiceTest.java` - 21 unit tests
+  - isDirectorOfHospital() - 7 tests
+  - belongsToHospital() - 3 tests
+  - canAccessHospital() - 4 tests
+  - isHospitalDirector() - 3 tests
+  - getUserHospitalId() - 4 tests
+
+- ✅ `PatientControllerAuthorizationTest.java` - 10 integration tests
+  - Director can access own hospital - 2 tests
+  - Director CANNOT access other hospital (403) - 2 tests
+  - Admin can access any hospital - 2 tests
+  - Unauthorized access (401) - 2 tests
+  - Data isolation between hospitals - 1 test
+  - Non-existent hospital (404) - 1 test
+
+### Authorization Rules Implemented:
+
+| Role | Own Hospital | Other Hospital | Any Hospital |
+|------|--------------|----------------|--------------|
+| **ADMIN** | ✅ Full Access | ✅ Full Access | ✅ Full Access |
+| **DIRECTOR** | ✅ Full Access | ❌ 403 Forbidden | ❌ 403 Forbidden |
+| **DOCTOR** | ✅ Read Access | ❌ 403 Forbidden | ❌ 403 Forbidden |
+| **PHARMACIST** | ✅ Read Access | ❌ 403 Forbidden | ❌ 403 Forbidden |
+| **PATIENT** | ✅ Own Data | ❌ 403 Forbidden | ❌ 403 Forbidden |
+
+### Security Features:
+- ✅ Method-level authorization with @PreAuthorize
+- ✅ SpEL expressions for hospital ownership checks
+- ✅ Automatic 403 Forbidden for unauthorized access
+- ✅ Automatic 401 Unauthorized for missing/invalid tokens
+- ✅ Complete data isolation between hospitals
+- ✅ Admin bypass for system-wide access
+
+### Test Results:
+- **All 319 tests passing** ✅
+  - 288 existing tests (from Phase 10.3)
+  - 21 new authorization service unit tests
+  - 10 new authorization integration tests
+  - 0 failures
+  - 2 skipped (appropriately disabled)
+
+### Key Design Decisions:
+1. **Service-based authorization**: Created `HospitalAuthorizationService` for reusable authorization logic
+2. **SpEL integration**: Used Spring Expression Language in @PreAuthorize for clean authorization rules
+3. **Admin bypass**: ADMIN role can access any hospital without ownership checks
+4. **Proper HTTP status codes**: 401 for authentication failures, 403 for authorization failures
+5. **Transactional reads**: All authorization checks use read-only transactions for performance
+
+### Files Modified:
+- **Created**: 3 files (HospitalAuthorizationService, SecurityTestConfig, PatientControllerAuthorizationTest)
+- **Updated**: 6 files (5 controllers + GlobalExceptionHandler)
+- **Total Lines**: ~800 lines (400 production + 400 test)
+
+
 - **Success rate**: 100%
 - **No regressions**: All existing functionality preserved
 
@@ -3632,8 +3779,9 @@ Response: 200 OK
 ---
 
 **Last Updated**: May 4, 2026  
-**Current Phase**: Phase 10.3 Complete → Ready for Phase 10.4  
-**Project Status**: 🟢 Active Development - Hospital-Scoped Queries Complete  
+**Current Phase**: Phase 10.4 Complete → Ready for Phase 10.5 or Production Hardening  
+**Project Status**: 🟢 Active Development - Hospital Authorization Complete  
 **Class Diagram Completion**: 100% (12 entities) + Hospital Entity (13 total)  
+**Test Coverage**: 319 tests (100% passing)  
 **Test Success Rate**: 100% (288 tests, 0 failures, 2 skipped)  
 **New Tests Added**: 8 (4 service unit tests + 4 controller integration tests)
