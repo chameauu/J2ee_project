@@ -56,4 +56,19 @@ public class PatientController {
         List<PatientDTO> patients = patientService.getAllPatients();
         return ResponseEntity.ok(patients);
     }
+
+    // Phase 10.3: Hospital-scoped queries
+    @GetMapping("/hospital/{hospitalId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'DOCTOR', 'PHARMACIST')")
+    public ResponseEntity<List<PatientDTO>> getPatientsByHospital(@PathVariable Long hospitalId) {
+        List<PatientDTO> patients = patientService.getPatientsByHospital(hospitalId);
+        return ResponseEntity.ok(patients);
+    }
+
+    @GetMapping("/hospital/{hospitalId}/count")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR')")
+    public ResponseEntity<Long> countPatientsByHospital(@PathVariable Long hospitalId) {
+        Long count = patientService.countPatientsByHospital(hospitalId);
+        return ResponseEntity.ok(count);
+    }
 }

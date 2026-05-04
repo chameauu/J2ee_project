@@ -1,10 +1,12 @@
 package com.hospital.management.services;
 
 import com.hospital.management.dto.PatientDTO;
+import com.hospital.management.entities.Hospital;
 import com.hospital.management.entities.Patient;
 import com.hospital.management.exceptions.DuplicateResourceException;
 import com.hospital.management.exceptions.ResourceNotFoundException;
 import com.hospital.management.mappers.PatientMapper;
+import com.hospital.management.repositories.HospitalRepository;
 import com.hospital.management.repositories.PatientRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ public class PatientServiceImpl implements IPatientService {
 
     private final PatientRepository patientRepository;
     private final PatientMapper patientMapper;
+    private final HospitalRepository hospitalRepository;
 
     @Override
     public PatientDTO createPatient(PatientDTO dto) {
@@ -28,6 +31,15 @@ public class PatientServiceImpl implements IPatientService {
         }
 
         Patient patient = patientMapper.toEntity(dto);
+        
+        // Assign hospital if hospitalId is provided (Phase 10.2)
+        if (dto.getHospitalId() != null) {
+            Hospital hospital = hospitalRepository.findById(dto.getHospitalId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Hospital not found with id: " + dto.getHospitalId()));
+            patient.setHospital(hospital);
+        }
+        
         Patient saved = patientRepository.save(patient);
         return patientMapper.toDTO(saved);
     }
@@ -57,6 +69,14 @@ public class PatientServiceImpl implements IPatientService {
         patient.setEmergencyContact(dto.getEmergencyContact());
         patient.setInsuranceNumber(dto.getInsuranceNumber());
 
+        // Update hospital if hospitalId is provided (Phase 10.2)
+        if (dto.getHospitalId() != null) {
+            Hospital hospital = hospitalRepository.findById(dto.getHospitalId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Hospital not found with id: " + dto.getHospitalId()));
+            patient.setHospital(hospital);
+        }
+
         Patient updated = patientRepository.save(patient);
         return patientMapper.toDTO(updated);
     }
@@ -74,5 +94,30 @@ public class PatientServiceImpl implements IPatientService {
         return patientRepository.findAll().stream()
                 .map(patientMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    // Hospital-scoped queries (Phase 10.3)
+    @Override
+    @Transactional(readOnly = true)
+    public List<PatientDTO> getPatientsByHospital(Long hospitalId) {
+        // Validate hospital exists
+        if (!hospitalRepository.existsById(hospitalId)) {
+            throw new ResourceNotFoundException("Hospital not found with id: " + hospitalId);
+        }
+        
+        return patientRepository.findByHospitalId(hospitalId).stream()
+                .map(patientMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Long countPatientsByHospital(Long hospitalId) {
+        // Validate hospital exists
+        if (!hospitalRepository.existsById(hospitalId)) {
+            throw new ResourceNotFoundException("Hospital not found with id: " + hospitalId);
+        }
+        
+        return patientRepository.countByHospitalId(hospitalId);
     }
 }

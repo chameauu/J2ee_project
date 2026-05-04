@@ -13,4 +13,13 @@ public interface DoctorRepository extends JpaRepository<Doctor, Long> {
     boolean existsByEmail(String email);
     boolean existsByLicenseNumber(String licenseNumber);
     List<Doctor> findBySpecialization(String specialization);
+
+    // Hospital-scoped queries (Phase 10.3)
+    List<Doctor> findByHospitalId(Long hospitalId);
+
+    List<Doctor> findByHospitalIdAndSpecialization(Long hospitalId, String specialization);
+
+    Long countByHospitalId(Long hospitalId);
+
+    boolean existsByHospitalId(Long hospitalId);
 }

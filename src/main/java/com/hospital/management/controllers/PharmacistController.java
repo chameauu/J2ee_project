@@ -56,4 +56,19 @@ public class PharmacistController {
         List<PharmacistDTO> pharmacists = pharmacistService.getAllPharmacists();
         return ResponseEntity.ok(pharmacists);
     }
+
+    // Phase 10.3: Hospital-scoped queries
+    @GetMapping("/hospital/{hospitalId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'PHARMACIST')")
+    public ResponseEntity<List<PharmacistDTO>> getPharmacistsByHospital(@PathVariable Long hospitalId) {
+        List<PharmacistDTO> pharmacists = pharmacistService.getPharmacistsByHospital(hospitalId);
+        return ResponseEntity.ok(pharmacists);
+    }
+
+    @GetMapping("/hospital/{hospitalId}/count")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR')")
+    public ResponseEntity<Long> countPharmacistsByHospital(@PathVariable Long hospitalId) {
+        Long count = pharmacistService.countPharmacistsByHospital(hospitalId);
+        return ResponseEntity.ok(count);
+    }
 }

@@ -47,4 +47,8 @@ public class HospitalDirectorDTO {
     private LocalDateTime updatedAt;
 
     private LocalDateTime lastLogin;
+
+    // Hospital relationship (Phase 10.2)
+    private Long hospitalId;
+    // Note: hospitalName field already exists above for display purposes
 }

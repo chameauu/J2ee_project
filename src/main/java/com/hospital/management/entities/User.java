@@ -51,4 +51,9 @@ public abstract class User {
     private LocalDateTime updatedAt;
 
     private LocalDateTime lastLogin;
+
+    // Hospital relationship (Phase 10.2)
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hospital_id")
+    private Hospital hospital;
 }

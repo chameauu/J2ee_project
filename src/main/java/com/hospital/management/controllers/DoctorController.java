@@ -64,4 +64,26 @@ public class DoctorController {
         List<DoctorDTO> doctors = doctorService.getDoctorsBySpecialization(specialization);
         return ResponseEntity.ok(doctors);
     }
+
+    // Phase 10.3: Hospital-scoped queries
+    @GetMapping("/hospital/{hospitalId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'DOCTOR', 'PATIENT')")
+    public ResponseEntity<List<DoctorDTO>> getDoctorsByHospital(
+            @PathVariable Long hospitalId,
+            @RequestParam(required = false) String specialization) {
+        List<DoctorDTO> doctors;
+        if (specialization != null && !specialization.isEmpty()) {
+            doctors = doctorService.getDoctorsByHospitalAndSpecialization(hospitalId, specialization);
+        } else {
+            doctors = doctorService.getDoctorsByHospital(hospitalId);
+        }
+        return ResponseEntity.ok(doctors);
+    }
+
+    @GetMapping("/hospital/{hospitalId}/count")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR')")
+    public ResponseEntity<Long> countDoctorsByHospital(@PathVariable Long hospitalId) {
+        Long count = doctorService.countDoctorsByHospital(hospitalId);
+        return ResponseEntity.ok(count);
+    }
 }

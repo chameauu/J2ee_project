@@ -42,4 +42,8 @@ public class DoctorDTO {
 
     @Size(max = 200, message = "Qualification must not exceed 200 characters")
     private String qualification;
+
+    // Hospital relationship (Phase 10.2)
+    private Long hospitalId;
+    private String hospitalName; // Read-only, for display
 }

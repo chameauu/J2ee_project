@@ -1,10 +1,12 @@
 package com.hospital.management.services;
 
 import com.hospital.management.dto.PharmacistDTO;
+import com.hospital.management.entities.Hospital;
 import com.hospital.management.entities.Pharmacist;
 import com.hospital.management.exceptions.DuplicateResourceException;
 import com.hospital.management.exceptions.ResourceNotFoundException;
 import com.hospital.management.mappers.PharmacistMapper;
+import com.hospital.management.repositories.HospitalRepository;
 import com.hospital.management.repositories.PharmacistRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -20,6 +22,7 @@ public class PharmacistServiceImpl implements IPharmacistService {
 
     private final PharmacistRepository pharmacistRepository;
     private final PharmacistMapper pharmacistMapper;
+    private final HospitalRepository hospitalRepository;
 
     @Override
     public PharmacistDTO createPharmacist(PharmacistDTO dto) {
@@ -31,6 +34,15 @@ public class PharmacistServiceImpl implements IPharmacistService {
         }
 
         Pharmacist pharmacist = pharmacistMapper.toEntity(dto);
+        
+        // Assign hospital if hospitalId is provided (Phase 10.2)
+        if (dto.getHospitalId() != null) {
+            Hospital hospital = hospitalRepository.findById(dto.getHospitalId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Hospital not found with id: " + dto.getHospitalId()));
+            pharmacist.setHospital(hospital);
+        }
+        
         Pharmacist saved = pharmacistRepository.save(pharmacist);
         return pharmacistMapper.toDTO(saved);
     }
@@ -55,6 +67,14 @@ public class PharmacistServiceImpl implements IPharmacistService {
         pharmacist.setLicenseNumber(dto.getLicenseNumber());
         pharmacist.setQualification(dto.getQualification());
 
+        // Update hospital if hospitalId is provided (Phase 10.2)
+        if (dto.getHospitalId() != null) {
+            Hospital hospital = hospitalRepository.findById(dto.getHospitalId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Hospital not found with id: " + dto.getHospitalId()));
+            pharmacist.setHospital(hospital);
+        }
+
         Pharmacist updated = pharmacistRepository.save(pharmacist);
         return pharmacistMapper.toDTO(updated);
     }
@@ -72,5 +92,30 @@ public class PharmacistServiceImpl implements IPharmacistService {
         return pharmacistRepository.findAll().stream()
                 .map(pharmacistMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    // Hospital-scoped queries (Phase 10.3)
+    @Override
+    @Transactional(readOnly = true)
+    public List<PharmacistDTO> getPharmacistsByHospital(Long hospitalId) {
+        // Validate hospital exists
+        if (!hospitalRepository.existsById(hospitalId)) {
+            throw new ResourceNotFoundException("Hospital not found with id: " + hospitalId);
+        }
+        
+        return pharmacistRepository.findByHospitalId(hospitalId).stream()
+                .map(pharmacistMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Long countPharmacistsByHospital(Long hospitalId) {
+        // Validate hospital exists
+        if (!hospitalRepository.existsById(hospitalId)) {
+            throw new ResourceNotFoundException("Hospital not found with id: " + hospitalId);
+        }
+        
+        return pharmacistRepository.countByHospitalId(hospitalId);
     }
 }

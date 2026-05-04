@@ -2,10 +2,12 @@ package com.hospital.management.services;
 
 import com.hospital.management.dto.DoctorDTO;
 import com.hospital.management.entities.Doctor;
+import com.hospital.management.entities.Hospital;
 import com.hospital.management.exceptions.DuplicateResourceException;
 import com.hospital.management.exceptions.ResourceNotFoundException;
 import com.hospital.management.mappers.DoctorMapper;
 import com.hospital.management.repositories.DoctorRepository;
+import com.hospital.management.repositories.HospitalRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,6 +22,7 @@ public class DoctorServiceImpl implements IDoctorService {
 
     private final DoctorRepository doctorRepository;
     private final DoctorMapper doctorMapper;
+    private final HospitalRepository hospitalRepository;
 
     @Override
     public DoctorDTO createDoctor(DoctorDTO dto) {
@@ -31,6 +34,15 @@ public class DoctorServiceImpl implements IDoctorService {
         }
 
         Doctor doctor = doctorMapper.toEntity(dto);
+        
+        // Assign hospital if hospitalId is provided (Phase 10.2)
+        if (dto.getHospitalId() != null) {
+            Hospital hospital = hospitalRepository.findById(dto.getHospitalId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Hospital not found with id: " + dto.getHospitalId()));
+            doctor.setHospital(hospital);
+        }
+        
         Doctor saved = doctorRepository.save(doctor);
         return doctorMapper.toDTO(saved);
     }
@@ -57,6 +69,14 @@ public class DoctorServiceImpl implements IDoctorService {
         doctor.setYearsOfExperience(dto.getYearsOfExperience());
         doctor.setQualification(dto.getQualification());
 
+        // Update hospital if hospitalId is provided (Phase 10.2)
+        if (dto.getHospitalId() != null) {
+            Hospital hospital = hospitalRepository.findById(dto.getHospitalId())
+                    .orElseThrow(() -> new ResourceNotFoundException(
+                            "Hospital not found with id: " + dto.getHospitalId()));
+            doctor.setHospital(hospital);
+        }
+
         Doctor updated = doctorRepository.save(doctor);
         return doctorMapper.toDTO(updated);
     }
@@ -82,5 +102,43 @@ public class DoctorServiceImpl implements IDoctorService {
         return doctorRepository.findBySpecialization(specialization).stream()
                 .map(doctorMapper::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    // Hospital-scoped queries (Phase 10.3)
+    @Override
+    @Transactional(readOnly = true)
+    public List<DoctorDTO> getDoctorsByHospital(Long hospitalId) {
+        // Validate hospital exists
+        if (!hospitalRepository.existsById(hospitalId)) {
+            throw new ResourceNotFoundException("Hospital not found with id: " + hospitalId);
+        }
+        
+        return doctorRepository.findByHospitalId(hospitalId).stream()
+                .map(doctorMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<DoctorDTO> getDoctorsByHospitalAndSpecialization(Long hospitalId, String specialization) {
+        // Validate hospital exists
+        if (!hospitalRepository.existsById(hospitalId)) {
+            throw new ResourceNotFoundException("Hospital not found with id: " + hospitalId);
+        }
+        
+        return doctorRepository.findByHospitalIdAndSpecialization(hospitalId, specialization).stream()
+                .map(doctorMapper::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Long countDoctorsByHospital(Long hospitalId) {
+        // Validate hospital exists
+        if (!hospitalRepository.existsById(hospitalId)) {
+            throw new ResourceNotFoundException("Hospital not found with id: " + hospitalId);
+        }
+        
+        return doctorRepository.countByHospitalId(hospitalId);
     }
 }

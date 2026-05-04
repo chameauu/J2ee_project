@@ -6,6 +6,7 @@ import com.hospital.management.enums.Gender;
 import com.hospital.management.exceptions.DuplicateResourceException;
 import com.hospital.management.exceptions.ResourceNotFoundException;
 import com.hospital.management.mappers.PatientMapper;
+import com.hospital.management.repositories.HospitalRepository;
 import com.hospital.management.repositories.PatientRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,6 +31,9 @@ class PatientServiceImplTest {
 
     @Mock
     private PatientMapper patientMapper;
+
+    @Mock
+    private HospitalRepository hospitalRepository;
 
     @InjectMocks
     private PatientServiceImpl patientService;
@@ -246,5 +250,91 @@ class PatientServiceImplTest {
         assertEquals(2, result.size());
         assertEquals("John", result.get(0).getFirstName());
         assertEquals("Jane", result.get(1).getFirstName());
+    }
+
+    // Phase 10.3: Hospital-scoped query tests
+    @Test
+    void shouldGetPatientsByHospital() {
+        // Given
+        Long hospitalId = 1L;
+        Patient patient1 = new Patient();
+        patient1.setId(1L);
+        patient1.setFirstName("John");
+
+        Patient patient2 = new Patient();
+        patient2.setId(2L);
+        patient2.setFirstName("Jane");
+
+        List<Patient> patients = Arrays.asList(patient1, patient2);
+
+        PatientDTO dto1 = new PatientDTO();
+        dto1.setId(1L);
+        dto1.setFirstName("John");
+        dto1.setHospitalId(hospitalId);
+
+        PatientDTO dto2 = new PatientDTO();
+        dto2.setId(2L);
+        dto2.setFirstName("Jane");
+        dto2.setHospitalId(hospitalId);
+
+        when(hospitalRepository.existsById(hospitalId)).thenReturn(true);
+        when(patientRepository.findByHospitalId(hospitalId)).thenReturn(patients);
+        when(patientMapper.toDTO(patient1)).thenReturn(dto1);
+        when(patientMapper.toDTO(patient2)).thenReturn(dto2);
+
+        // When
+        List<PatientDTO> result = patientService.getPatientsByHospital(hospitalId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(2, result.size());
+        assertEquals("John", result.get(0).getFirstName());
+        assertEquals("Jane", result.get(1).getFirstName());
+        assertEquals(hospitalId, result.get(0).getHospitalId());
+        verify(hospitalRepository).existsById(hospitalId);
+        verify(patientRepository).findByHospitalId(hospitalId);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenHospitalNotFoundForGetPatients() {
+        // Given
+        Long hospitalId = 999L;
+        when(hospitalRepository.existsById(hospitalId)).thenReturn(false);
+
+        // When & Then
+        assertThrows(ResourceNotFoundException.class,
+                () -> patientService.getPatientsByHospital(hospitalId));
+        verify(patientRepository, never()).findByHospitalId(any());
+    }
+
+    @Test
+    void shouldCountPatientsByHospital() {
+        // Given
+        Long hospitalId = 1L;
+        Long expectedCount = 150L;
+
+        when(hospitalRepository.existsById(hospitalId)).thenReturn(true);
+        when(patientRepository.countByHospitalId(hospitalId)).thenReturn(expectedCount);
+
+        // When
+        Long result = patientService.countPatientsByHospital(hospitalId);
+
+        // Then
+        assertNotNull(result);
+        assertEquals(expectedCount, result);
+        verify(hospitalRepository).existsById(hospitalId);
+        verify(patientRepository).countByHospitalId(hospitalId);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenHospitalNotFoundForCountPatients() {
+        // Given
+        Long hospitalId = 999L;
+        when(hospitalRepository.existsById(hospitalId)).thenReturn(false);
+
+        // When & Then
+        assertThrows(ResourceNotFoundException.class,
+                () -> patientService.countPatientsByHospital(hospitalId));
+        verify(patientRepository, never()).countByHospitalId(any());
     }
 }

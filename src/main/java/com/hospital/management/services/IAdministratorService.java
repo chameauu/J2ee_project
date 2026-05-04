@@ -15,4 +15,9 @@ public interface IAdministratorService {
     void deleteAdministrator(Long id);
 
     List<AdministratorDTO> getAllAdministrators();
+
+    // Hospital-scoped queries (Phase 10.3)
+    List<AdministratorDTO> getAdministratorsByHospital(Long hospitalId);
+
+    Long countAdministratorsByHospital(Long hospitalId);
 }

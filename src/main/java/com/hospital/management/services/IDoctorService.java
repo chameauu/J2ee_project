@@ -11,4 +11,9 @@ public interface IDoctorService {
     void deleteDoctor(Long id);
     List<DoctorDTO> getAllDoctors();
     List<DoctorDTO> getDoctorsBySpecialization(String specialization);
+
+    // Hospital-scoped queries (Phase 10.3)
+    List<DoctorDTO> getDoctorsByHospital(Long hospitalId);
+    List<DoctorDTO> getDoctorsByHospitalAndSpecialization(Long hospitalId, String specialization);
+    Long countDoctorsByHospital(Long hospitalId);
 }

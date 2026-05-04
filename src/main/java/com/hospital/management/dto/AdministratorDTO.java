@@ -36,4 +36,8 @@ public class AdministratorDTO {
 
     @Size(max = 50, message = "Access level must not exceed 50 characters")
     private String accessLevel;
+
+    // Hospital relationship (Phase 10.2)
+    private Long hospitalId;
+    private String hospitalName; // Read-only, for display
 }

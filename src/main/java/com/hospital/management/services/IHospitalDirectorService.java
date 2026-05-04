@@ -10,4 +10,8 @@ public interface IHospitalDirectorService {
     List<HospitalDirectorDTO> getAllHospitalDirectors();
     HospitalDirectorDTO updateHospitalDirector(Long id, HospitalDirectorDTO dto);
     void deleteHospitalDirector(Long id);
+
+    // Hospital-scoped queries (Phase 10.3)
+    List<HospitalDirectorDTO> getHospitalDirectorsByHospital(Long hospitalId);
+    Long countHospitalDirectorsByHospital(Long hospitalId);
 }

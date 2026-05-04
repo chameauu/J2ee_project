@@ -10,4 +10,8 @@ public interface IPharmacistService {
     PharmacistDTO updatePharmacist(Long id, PharmacistDTO dto);
     void deletePharmacist(Long id);
     List<PharmacistDTO> getAllPharmacists();
+
+    // Hospital-scoped queries (Phase 10.3)
+    List<PharmacistDTO> getPharmacistsByHospital(Long hospitalId);
+    Long countPharmacistsByHospital(Long hospitalId);
 }

@@ -44,4 +44,8 @@ public class PatientDTO {
     private String emergencyContact;
 
     private String insuranceNumber;
+
+    // Hospital relationship (Phase 10.2)
+    private Long hospitalId;
+    private String hospitalName; // Read-only, for display
 }

@@ -225,4 +225,106 @@ class PatientControllerIntegrationTest {
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(2));
     }
+
+    // Phase 10.3: Hospital-scoped endpoint tests
+    @Test
+    void shouldGetPatientsByHospital() throws Exception {
+        // Given - create a hospital first
+        String hospitalJson = "{\"name\":\"City Medical Center\",\"address\":\"123 Hospital St\",\"phone\":\"+1234567890\",\"email\":\"info@citymedical.com\",\"registrationNumber\":\"REG-001\",\"capacity\":500}";
+        
+        String hospitalResponse = mockMvc.perform(post("/api/hospitals")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(hospitalJson))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        
+        Long hospitalId = objectMapper.readTree(hospitalResponse).get("id").asLong();
+
+        // Create patients with hospital assignment
+        PatientDTO patient1 = new PatientDTO();
+        patient1.setFirstName("Hospital");
+        patient1.setLastName("Patient1");
+        patient1.setEmail("hospital.patient1@example.com");
+        patient1.setPhone("+3333333333");
+        patient1.setDateOfBirth(LocalDate.of(1990, 1, 1));
+        patient1.setGender(Gender.MALE);
+        patient1.setHospitalId(hospitalId);
+
+        PatientDTO patient2 = new PatientDTO();
+        patient2.setFirstName("Hospital");
+        patient2.setLastName("Patient2");
+        patient2.setEmail("hospital.patient2@example.com");
+        patient2.setPhone("+4444444444");
+        patient2.setDateOfBirth(LocalDate.of(1991, 2, 2));
+        patient2.setGender(Gender.FEMALE);
+        patient2.setHospitalId(hospitalId);
+
+        mockMvc.perform(post("/api/patients")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(patient1)))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(post("/api/patients")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(patient2)))
+                .andExpect(status().isCreated());
+
+        // When & Then
+        mockMvc.perform(get("/api/patients/hospital/" + hospitalId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].hospitalId").value(hospitalId))
+                .andExpect(jsonPath("$[1].hospitalId").value(hospitalId));
+    }
+
+    @Test
+    void shouldReturn404WhenGettingPatientsByNonExistentHospital() throws Exception {
+        // When & Then
+        mockMvc.perform(get("/api/patients/hospital/999"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldCountPatientsByHospital() throws Exception {
+        // Given - create a hospital first
+        String hospitalJson = "{\"name\":\"County Hospital\",\"address\":\"456 County Rd\",\"phone\":\"+1234567891\",\"email\":\"info@countyhospital.com\",\"registrationNumber\":\"REG-002\",\"capacity\":300}";
+        
+        String hospitalResponse = mockMvc.perform(post("/api/hospitals")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(hospitalJson))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        
+        Long hospitalId = objectMapper.readTree(hospitalResponse).get("id").asLong();
+
+        // Create 3 patients with hospital assignment
+        for (int i = 0; i < 3; i++) {
+            PatientDTO patient = new PatientDTO();
+            patient.setFirstName("Count");
+            patient.setLastName("Patient" + i);
+            patient.setEmail("count.patient" + i + "@example.com");
+            patient.setPhone("+555555555" + i);
+            patient.setDateOfBirth(LocalDate.of(1990 + i, 1, 1));
+            patient.setGender(Gender.MALE);
+            patient.setHospitalId(hospitalId);
+
+            mockMvc.perform(post("/api/patients")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content(objectMapper.writeValueAsString(patient)))
+                    .andExpect(status().isCreated());
+        }
+
+        // When & Then
+        mockMvc.perform(get("/api/patients/hospital/" + hospitalId + "/count"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("3"));
+    }
+
+    @Test
+    void shouldReturn404WhenCountingPatientsByNonExistentHospital() throws Exception {
+        // When & Then
+        mockMvc.perform(get("/api/patients/hospital/999/count"))
+                .andExpect(status().isNotFound());
+    }
 }

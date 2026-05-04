@@ -15,4 +15,9 @@ public interface IPatientService {
     void deletePatient(Long id);
 
     List<PatientDTO> getAllPatients();
+
+    // Hospital-scoped queries (Phase 10.3)
+    List<PatientDTO> getPatientsByHospital(Long hospitalId);
+
+    Long countPatientsByHospital(Long hospitalId);
 }

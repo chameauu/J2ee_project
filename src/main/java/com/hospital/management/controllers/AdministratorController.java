@@ -52,4 +52,19 @@ public class AdministratorController {
         List<AdministratorDTO> administrators = administratorService.getAllAdministrators();
         return ResponseEntity.ok(administrators);
     }
+
+    // Phase 10.3: Hospital-scoped queries
+    @GetMapping("/hospital/{hospitalId}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR')")
+    public ResponseEntity<List<AdministratorDTO>> getAdministratorsByHospital(@PathVariable Long hospitalId) {
+        List<AdministratorDTO> administrators = administratorService.getAdministratorsByHospital(hospitalId);
+        return ResponseEntity.ok(administrators);
+    }
+
+    @GetMapping("/hospital/{hospitalId}/count")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR')")
+    public ResponseEntity<Long> countAdministratorsByHospital(@PathVariable Long hospitalId) {
+        Long count = administratorService.countAdministratorsByHospital(hospitalId);
+        return ResponseEntity.ok(count);
+    }
 }
