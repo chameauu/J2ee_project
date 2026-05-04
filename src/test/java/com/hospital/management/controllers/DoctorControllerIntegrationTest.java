@@ -1,42 +1,47 @@
 package com.hospital.management.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hospital.management.config.TestSecurityConfig;
 import com.hospital.management.dto.DoctorDTO;
+import com.hospital.management.entities.Administrator;
+import com.hospital.management.entities.Hospital;
+import com.hospital.management.enums.UserRole;
+import com.hospital.management.repositories.AdministratorRepository;
 import com.hospital.management.repositories.DoctorRepository;
+import com.hospital.management.repositories.HospitalRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
-@ActiveProfiles("test")
-@Import(TestSecurityConfig.class)
-class DoctorControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+class DoctorControllerIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private DoctorRepository doctorRepository;
 
+    @Autowired
+    private HospitalRepository hospitalRepository;
+
+    @Autowired
+    private AdministratorRepository administratorRepository;
+
+    private Hospital testHospital;
+    private String adminToken;
+
     @BeforeEach
     void setUp() {
+        // Clean up
         doctorRepository.deleteAll();
+        administratorRepository.deleteAll();
+        hospitalRepository.deleteAll();
+        
+        // Create test hospital
+        testHospital = testAuthUtils.createTestHospital("Test Hospital");
+        
+        // Create admin user and generate token
+        Administrator admin = testAuthUtils.createTestAdmin("admin@example.com");
+        adminToken = testAuthUtils.generateToken("admin@example.com", UserRole.ADMIN);
     }
 
     @Test
@@ -45,6 +50,7 @@ class DoctorControllerIntegrationTest {
                 "+1234567890", "Cardiology", "LIC12345", 10, "MD, FACC");
 
         mockMvc.perform(post("/api/doctors")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())
@@ -60,6 +66,7 @@ class DoctorControllerIntegrationTest {
         // Missing required fields
 
         mockMvc.perform(post("/api/doctors")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isBadRequest())
@@ -71,7 +78,8 @@ class DoctorControllerIntegrationTest {
         DoctorDTO created = createAndSaveDoctor("Dr. Jane", "Doe", "jane.doe@hospital.com",
                 "+9876543210", "Neurology", "LIC67890", 15, "MD, PhD");
 
-        mockMvc.perform(get("/api/doctors/" + created.getId()))
+        mockMvc.perform(get("/api/doctors/" + created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(created.getId()))
                 .andExpect(jsonPath("$.firstName").value("Dr. Jane"))
@@ -80,7 +88,8 @@ class DoctorControllerIntegrationTest {
 
     @Test
     void shouldReturn404WhenDoctorNotFound() throws Exception {
-        mockMvc.perform(get("/api/doctors/999"))
+        mockMvc.perform(get("/api/doctors/999")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Doctor not found with id: 999"));
     }
@@ -95,6 +104,7 @@ class DoctorControllerIntegrationTest {
         created.setYearsOfExperience(7);
 
         mockMvc.perform(put("/api/doctors/" + created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(created)))
                 .andExpect(status().isOk())
@@ -109,6 +119,7 @@ class DoctorControllerIntegrationTest {
                 "+1234567890", "General", "LIC99999", 1, "MD");
 
         mockMvc.perform(put("/api/doctors/999")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isNotFound());
@@ -119,16 +130,19 @@ class DoctorControllerIntegrationTest {
         DoctorDTO created = createAndSaveDoctor("Dr. Bob", "Wilson", "bob.wilson@hospital.com",
                 "+2222222222", "Orthopedics", "LIC22222", 20, "MD, FAAOS");
 
-        mockMvc.perform(delete("/api/doctors/" + created.getId()))
+        mockMvc.perform(delete("/api/doctors/" + created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/doctors/" + created.getId()))
+        mockMvc.perform(get("/api/doctors/" + created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void shouldReturn404WhenDeletingNonExistentDoctor() throws Exception {
-        mockMvc.perform(delete("/api/doctors/999"))
+        mockMvc.perform(delete("/api/doctors/999")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound());
     }
 
@@ -139,7 +153,8 @@ class DoctorControllerIntegrationTest {
         createAndSaveDoctor("Dr. Doctor2", "Two", "doctor2@hospital.com",
                 "+4444444444", "Neurology", "LIC44444", 12, "MD, PhD");
 
-        mockMvc.perform(get("/api/doctors"))
+        mockMvc.perform(get("/api/doctors")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(2));
@@ -155,6 +170,7 @@ class DoctorControllerIntegrationTest {
                 "+7777777777", "Neurology", "LIC77777", 8, "MD");
 
         mockMvc.perform(get("/api/doctors/search")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .param("specialization", "Cardiology"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
@@ -176,6 +192,7 @@ class DoctorControllerIntegrationTest {
         dto.setLicenseNumber(licenseNumber);
         dto.setYearsOfExperience(yearsOfExperience);
         dto.setQualification(qualification);
+        dto.setHospitalId(testHospital.getId());
         return dto;
     }
 
@@ -186,6 +203,7 @@ class DoctorControllerIntegrationTest {
                 licenseNumber, yearsOfExperience, qualification);
 
         String response = mockMvc.perform(post("/api/doctors")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(dto)))
                 .andExpect(status().isCreated())

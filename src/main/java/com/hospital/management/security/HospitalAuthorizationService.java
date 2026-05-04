@@ -216,9 +216,12 @@ public class HospitalAuthorizationService {
     /**
      * Check if authenticated user can access data belonging to a specific user.
      * ADMIN can access any user's data.
-     * Others can only access data from users in their hospital.
+     * DOCTOR can only access their own data or their patients' data.
+     * PATIENT can only access their own data.
+     * DIRECTOR can access data from users in their hospital.
      * 
      * Phase 10.5: Medical Entity Authorization
+     * Phase 10.8: Enhanced with ownership checks
      * 
      * @param userId The ID of the user whose data is being accessed
      * @param authentication The Spring Security authentication object
@@ -243,6 +246,21 @@ public class HospitalAuthorizationService {
         }
 
         try {
+            // Get the authenticated user
+            Optional<User> authUserOpt = userRepository.findByEmail(userEmail);
+            if (authUserOpt.isEmpty()) {
+                log.warn("Authenticated user not found with email: {}", userEmail);
+                return false;
+            }
+
+            User authUser = authUserOpt.get();
+
+            // Check if user is accessing their own data
+            if (authUser.getId().equals(userId)) {
+                log.debug("User {} accessing their own data", userEmail);
+                return true;
+            }
+
             // Get the target user's hospital
             Optional<User> targetUserOpt = userRepository.findById(userId);
             if (targetUserOpt.isEmpty()) {
@@ -258,11 +276,56 @@ public class HospitalAuthorizationService {
 
             Long targetHospitalId = targetUser.getHospital().getId();
 
-            // Check if authenticated user belongs to the same hospital
-            return belongsToHospital(targetHospitalId, userEmail);
+            // DIRECTOR can access data from users in their hospital
+            boolean isDirector = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_DIRECTOR"));
+            
+            if (isDirector) {
+                boolean canAccess = belongsToHospital(targetHospitalId, userEmail);
+                if (!canAccess) {
+                    log.warn("Director {} attempted to access user {} from different hospital", userEmail, userId);
+                }
+                return canAccess;
+            }
+
+            // DOCTOR and PATIENT can only access their own data (already checked above)
+            log.warn("User {} attempted to access user {} data without permission", userEmail, userId);
+            return false;
 
         } catch (Exception e) {
             log.error("Error checking user data access for user {}: {}", userId, e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check if authenticated user is the owner of the specified user ID.
+     * Used for self-access checks (e.g., patient accessing their own records).
+     * 
+     * Phase 10.8: Ownership validation
+     * 
+     * @param userId The ID to check ownership for
+     * @param authentication The Spring Security authentication object
+     * @return true if authenticated user owns the ID, false otherwise
+     */
+    @Transactional(readOnly = true)
+    public boolean isOwner(Long userId, Authentication authentication) {
+        if (userId == null || authentication == null) {
+            return false;
+        }
+
+        String userEmail = authentication.getName();
+
+        try {
+            Optional<User> userOpt = userRepository.findByEmail(userEmail);
+            if (userOpt.isEmpty()) {
+                return false;
+            }
+
+            return userOpt.get().getId().equals(userId);
+
+        } catch (Exception e) {
+            log.error("Error checking ownership: {}", e.getMessage());
             return false;
         }
     }

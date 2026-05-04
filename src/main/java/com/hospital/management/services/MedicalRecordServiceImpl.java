@@ -93,6 +93,8 @@ public class MedicalRecordServiceImpl implements IMedicalRecordService {
     @Override
     @Transactional(readOnly = true)
     public List<MedicalRecordDTO> getPatientMedicalHistory(Long patientId) {
+        // Ownership validation is handled by @PreAuthorize in controller
+        // This ensures only authorized users (patient themselves, their doctors, or admins) can access
         return medicalRecordRepository.findByPatientIdOrderByVisitDateDesc(patientId)
                 .stream()
                 .map(medicalRecordMapper::toDTO)
@@ -102,6 +104,8 @@ public class MedicalRecordServiceImpl implements IMedicalRecordService {
     @Override
     @Transactional(readOnly = true)
     public List<MedicalRecordDTO> getDoctorMedicalRecords(Long doctorId) {
+        // Ownership validation is handled by @PreAuthorize in controller
+        // This ensures only the doctor themselves or admins can access
         return medicalRecordRepository.findByDoctorIdOrderByVisitDateDesc(doctorId)
                 .stream()
                 .map(medicalRecordMapper::toDTO)

@@ -1,10 +1,9 @@
 package com.hospital.management.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hospital.management.config.TestSecurityConfig;
-import com.hospital.management.dto.DoctorDTO;
 import com.hospital.management.dto.LoginRequest;
-import com.hospital.management.dto.PatientDTO;
+import com.hospital.management.entities.Doctor;
+import com.hospital.management.entities.Patient;
 import com.hospital.management.enums.Gender;
 import com.hospital.management.repositories.DoctorRepository;
 import com.hospital.management.repositories.PatientRepository;
@@ -14,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -29,7 +27,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-@Import(TestSecurityConfig.class)
 class AuthControllerIntegrationTest {
 
     @Autowired
@@ -135,33 +132,27 @@ class AuthControllerIntegrationTest {
     }
 
     // Helper methods
-    private void createPatient(String email) throws Exception {
-        PatientDTO dto = new PatientDTO();
-        dto.setFirstName("Test");
-        dto.setLastName("Patient");
-        dto.setEmail(email);
-        dto.setPhone("+1234567890");
-        dto.setDateOfBirth(LocalDate.of(1990, 1, 1));
-        dto.setGender(Gender.MALE);
-
-        mockMvc.perform(post("/api/patients")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(dto)));
+    private void createPatient(String email) {
+        Patient patient = new Patient();
+        patient.setFirstName("Test");
+        patient.setLastName("Patient");
+        patient.setEmail(email);
+        patient.setPhone("+1234567890");
+        patient.setDateOfBirth(LocalDate.of(1990, 1, 1));
+        patient.setGender(Gender.MALE);
+        patientRepository.save(patient);
     }
 
-    private void createDoctor(String email) throws Exception {
-        DoctorDTO dto = new DoctorDTO();
-        dto.setFirstName("Test");
-        dto.setLastName("Doctor");
-        dto.setEmail(email);
-        dto.setPhone("+1234567890");
-        dto.setSpecialization("Cardiology");
-        dto.setLicenseNumber("LIC" + System.currentTimeMillis());
-        dto.setYearsOfExperience(10);
-        dto.setQualification("MD");
-
-        mockMvc.perform(post("/api/doctors")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(dto)));
+    private void createDoctor(String email) {
+        Doctor doctor = new Doctor();
+        doctor.setFirstName("Test");
+        doctor.setLastName("Doctor");
+        doctor.setEmail(email);
+        doctor.setPhone("+1234567890");
+        doctor.setSpecialization("Cardiology");
+        doctor.setLicenseNumber("LIC" + System.currentTimeMillis());
+        doctor.setYearsOfExperience(10);
+        doctor.setQualification("MD");
+        doctorRepository.save(doctor);
     }
 }

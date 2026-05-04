@@ -14,7 +14,13 @@ public interface IStatisticsService {
     
     DirectorDashboardDTO getDirectorDashboard();
     
+    // Phase 10.8: Hospital-specific methods
+    DirectorDashboardDTO getDirectorDashboardByHospital(Long hospitalId);
+    
     List<DoctorPerformanceDTO> getAllDoctorsPerformance();
+    
+    // Phase 10.8: Hospital-specific methods
+    List<DoctorPerformanceDTO> getDoctorsPerformanceByHospital(Long hospitalId);
     
     DoctorPerformanceDTO getDoctorPerformance(Long doctorId);
 }

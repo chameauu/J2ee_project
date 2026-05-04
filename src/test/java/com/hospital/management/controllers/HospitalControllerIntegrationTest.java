@@ -1,18 +1,15 @@
 package com.hospital.management.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hospital.management.dto.HospitalDTO;
+import com.hospital.management.entities.Administrator;
 import com.hospital.management.entities.Hospital;
+import com.hospital.management.enums.UserRole;
+import com.hospital.management.repositories.AdministratorRepository;
 import com.hospital.management.repositories.HospitalRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
@@ -20,24 +17,25 @@ import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@ActiveProfiles("test")
-@Transactional
-class HospitalControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+class HospitalControllerIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private HospitalRepository hospitalRepository;
 
+    @Autowired
+    private AdministratorRepository administratorRepository;
+
+    private String adminToken;
+
     @BeforeEach
     void setUp() {
+        // Clean up
         hospitalRepository.deleteAll();
+        administratorRepository.deleteAll();
+        
+        // Create admin user and generate token
+        Administrator admin = testAuthUtils.createTestAdmin("admin@example.com");
+        adminToken = testAuthUtils.generateToken("admin@example.com", UserRole.ADMIN);
     }
 
     @Test
@@ -51,6 +49,7 @@ class HospitalControllerIntegrationTest {
         hospitalDTO.setEstablishedDate(LocalDate.of(1990, 1, 15));
 
         mockMvc.perform(post("/api/hospitals")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(hospitalDTO)))
                 .andExpect(status().isCreated())
@@ -71,6 +70,7 @@ class HospitalControllerIntegrationTest {
         // Missing required fields
 
         mockMvc.perform(post("/api/hospitals")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(hospitalDTO)))
                 .andExpect(status().isBadRequest());
@@ -87,7 +87,8 @@ class HospitalControllerIntegrationTest {
         hospital.setEstablishedDate(LocalDate.of(1985, 6, 20));
         hospital = hospitalRepository.save(hospital);
 
-        mockMvc.perform(get("/api/hospitals/" + hospital.getId()))
+        mockMvc.perform(get("/api/hospitals/" + hospital.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(hospital.getId()))
                 .andExpect(jsonPath("$.name").value("County Medical Center"))
@@ -96,7 +97,8 @@ class HospitalControllerIntegrationTest {
 
     @Test
     void shouldReturn404WhenHospitalNotFound() throws Exception {
-        mockMvc.perform(get("/api/hospitals/99999"))
+        mockMvc.perform(get("/api/hospitals/99999")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value("Hospital not found with id: 99999"));
     }
@@ -121,6 +123,7 @@ class HospitalControllerIntegrationTest {
         updateDTO.setEstablishedDate(LocalDate.of(2000, 3, 10));
 
         mockMvc.perform(put("/api/hospitals/" + hospital.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDTO)))
                 .andExpect(status().isOk())
@@ -140,6 +143,7 @@ class HospitalControllerIntegrationTest {
         updateDTO.setEstablishedDate(LocalDate.now());
 
         mockMvc.perform(put("/api/hospitals/99999")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDTO)))
                 .andExpect(status().isNotFound());
@@ -156,16 +160,19 @@ class HospitalControllerIntegrationTest {
         hospital.setEstablishedDate(LocalDate.now());
         hospital = hospitalRepository.save(hospital);
 
-        mockMvc.perform(delete("/api/hospitals/" + hospital.getId()))
+        mockMvc.perform(delete("/api/hospitals/" + hospital.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/hospitals/" + hospital.getId()))
+        mockMvc.perform(get("/api/hospitals/" + hospital.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void shouldReturn404WhenDeletingNonExistentHospital() throws Exception {
-        mockMvc.perform(delete("/api/hospitals/99999"))
+        mockMvc.perform(delete("/api/hospitals/99999")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound());
     }
 
@@ -189,7 +196,8 @@ class HospitalControllerIntegrationTest {
         hospital2.setEstablishedDate(LocalDate.now());
         hospitalRepository.save(hospital2);
 
-        mockMvc.perform(get("/api/hospitals"))
+        mockMvc.perform(get("/api/hospitals")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
                 .andExpect(jsonPath("$[0].name").value("Hospital One"))
@@ -217,6 +225,7 @@ class HospitalControllerIntegrationTest {
         hospitalRepository.save(hospital2);
 
         mockMvc.perform(get("/api/hospitals/search")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .param("keyword", "City"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))

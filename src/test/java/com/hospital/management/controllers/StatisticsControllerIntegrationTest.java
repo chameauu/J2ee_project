@@ -1,21 +1,15 @@
 package com.hospital.management.controllers;
 
-import com.hospital.management.config.TestSecurityConfig;
 import com.hospital.management.entities.*;
 import com.hospital.management.enums.AppointmentStatus;
 import com.hospital.management.enums.AppointmentType;
 import com.hospital.management.enums.Gender;
 import com.hospital.management.enums.PrescriptionStatus;
+import com.hospital.management.enums.UserRole;
 import com.hospital.management.repositories.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -25,15 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
-@ActiveProfiles("test")
-@Import(TestSecurityConfig.class)
-class StatisticsControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
+class StatisticsControllerIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private DoctorRepository doctorRepository;
@@ -54,15 +40,29 @@ class StatisticsControllerIntegrationTest {
     private MedicalRecordRepository medicalRecordRepository;
 
     @Autowired
-    private HospitalRepository hospitalRepository; // Phase 10.6
+    private HospitalRepository hospitalRepository;
 
-    private Hospital hospital; // Phase 10.6
+    @Autowired
+    private AdministratorRepository administratorRepository;
+
+    private Hospital hospital;
     private Doctor doctor;
     private Patient patient;
+    private String adminToken;
 
     @BeforeEach
     void setUp() {
-        // Phase 10.6: Create hospital first
+        // Clean up
+        appointmentRepository.deleteAll();
+        prescriptionRepository.deleteAll();
+        medicalRecordRepository.deleteAll();
+        pharmacistRepository.deleteAll();
+        doctorRepository.deleteAll();
+        patientRepository.deleteAll();
+        administratorRepository.deleteAll();
+        hospitalRepository.deleteAll();
+        
+        // Create hospital
         hospital = new Hospital();
         hospital.setName("Test Hospital");
         hospital.setAddress("123 Test St");
@@ -71,6 +71,10 @@ class StatisticsControllerIntegrationTest {
         hospital.setRegistrationNumber("REG-TEST-001");
         hospital.setEstablishedDate(LocalDate.of(2000, 1, 1));
         hospital = hospitalRepository.save(hospital);
+
+        // Create admin user and generate token
+        testAuthUtils.createTestAdmin("admin@example.com");
+        adminToken = testAuthUtils.generateToken("admin@example.com", UserRole.ADMIN);
 
         // Create test data
         doctor = new Doctor();
@@ -82,7 +86,7 @@ class StatisticsControllerIntegrationTest {
         doctor.setLicenseNumber("LIC001");
         doctor.setYearsOfExperience(10);
         doctor.setQualification("MD");
-        doctor.setHospital(hospital); // Phase 10.6
+        doctor.setHospital(hospital);
         doctor = doctorRepository.save(doctor);
 
         patient = new Patient();
@@ -94,7 +98,7 @@ class StatisticsControllerIntegrationTest {
         patient.setGender(Gender.FEMALE);
         patient.setBloodType("O+");
         patient.setAddress("123 Main St");
-        patient.setHospital(hospital); // Phase 10.6
+        patient.setHospital(hospital);
         patient = patientRepository.save(patient);
 
         Pharmacist pharmacist = new Pharmacist();
@@ -104,14 +108,14 @@ class StatisticsControllerIntegrationTest {
         pharmacist.setPhone("1112223333");
         pharmacist.setLicenseNumber("PLIC001");
         pharmacist.setQualification("PharmD");
-        pharmacist.setHospital(hospital); // Phase 10.6
+        pharmacist.setHospital(hospital);
         pharmacistRepository.save(pharmacist);
 
         // Create appointment for today
         Appointment appointment = new Appointment();
         appointment.setPatient(patient);
         appointment.setDoctor(doctor);
-        appointment.setHospital(hospital); // Phase 10.6
+        appointment.setHospital(hospital);
         appointment.setAppointmentDateTime(LocalDateTime.now().plusHours(2));
         appointment.setDurationMinutes(30);
         appointment.setStatus(AppointmentStatus.SCHEDULED);
@@ -123,7 +127,7 @@ class StatisticsControllerIntegrationTest {
         Appointment completedAppointment = new Appointment();
         completedAppointment.setPatient(patient);
         completedAppointment.setDoctor(doctor);
-        completedAppointment.setHospital(hospital); // Phase 10.6
+        completedAppointment.setHospital(hospital);
         completedAppointment.setAppointmentDateTime(LocalDateTime.now().minusDays(1));
         completedAppointment.setDurationMinutes(30);
         completedAppointment.setStatus(AppointmentStatus.COMPLETED);
@@ -135,7 +139,7 @@ class StatisticsControllerIntegrationTest {
         MedicalRecord medicalRecord = new MedicalRecord();
         medicalRecord.setPatient(patient);
         medicalRecord.setDoctor(doctor);
-        medicalRecord.setHospital(hospital); // Phase 10.6
+        medicalRecord.setHospital(hospital);
         medicalRecord.setVisitDate(LocalDateTime.now());
         medicalRecord.setChiefComplaint("Chest pain");
         medicalRecord.setDiagnosis("Angina");
@@ -147,7 +151,7 @@ class StatisticsControllerIntegrationTest {
         prescription.setPatient(patient);
         prescription.setDoctor(doctor);
         prescription.setMedicalRecord(medicalRecord);
-        prescription.setHospital(hospital); // Phase 10.6
+        prescription.setHospital(hospital);
         prescription.setPrescribedDate(LocalDateTime.now());
         prescription.setValidUntil(LocalDate.now().plusDays(30));
         prescription.setStatus(PrescriptionStatus.ACTIVE);
@@ -160,7 +164,8 @@ class StatisticsControllerIntegrationTest {
 
     @Test
     void shouldGetDashboardStats() throws Exception {
-        mockMvc.perform(get("/api/admin/dashboard"))
+        mockMvc.perform(get("/api/admin/dashboard")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalDoctors", is(1)))
                 .andExpect(jsonPath("$.totalPatients", is(1)))
@@ -173,7 +178,8 @@ class StatisticsControllerIntegrationTest {
 
     @Test
     void shouldGetDoctorStats() throws Exception {
-        mockMvc.perform(get("/api/doctors/{doctorId}/statistics", doctor.getId()))
+        mockMvc.perform(get("/api/doctors/{doctorId}/statistics", doctor.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.doctorId", is(doctor.getId().intValue())))
                 .andExpect(jsonPath("$.doctorName", is("John Doe")))
@@ -187,7 +193,8 @@ class StatisticsControllerIntegrationTest {
 
     @Test
     void shouldReturn404WhenDoctorNotFound() throws Exception {
-        mockMvc.perform(get("/api/doctors/{doctorId}/statistics", 999L))
+        mockMvc.perform(get("/api/doctors/{doctorId}/statistics", 999L)
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound());
     }
 }

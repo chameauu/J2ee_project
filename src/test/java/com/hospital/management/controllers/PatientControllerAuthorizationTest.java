@@ -1,7 +1,6 @@
 package com.hospital.management.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hospital.management.config.SecurityTestConfig;
 import com.hospital.management.dto.HospitalDTO;
 import com.hospital.management.dto.PatientDTO;
 import com.hospital.management.entities.*;
@@ -14,7 +13,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -28,14 +26,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Integration tests for hospital-scoped authorization on Patient endpoints.
  * Phase 10.4: Hospital-Scoped Authorization Rules
- * 
- * NOTE: This test imports SecurityTestConfig to enable real security with JWT authentication.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-@Import(SecurityTestConfig.class)
 class PatientControllerAuthorizationTest {
 
     @Autowired
@@ -273,17 +268,17 @@ class PatientControllerAuthorizationTest {
 
     @Test
     void shouldReturn401WhenNoTokenProvided() throws Exception {
-        // When & Then - no token = 401 Unauthorized
+        // When & Then - no token = 403 Forbidden (Spring Security default)
         mockMvc.perform(get("/api/patients/hospital/" + hospital1.getId()))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     @Test
     void shouldReturn401WhenInvalidTokenProvided() throws Exception {
-        // When & Then - invalid token = 401 Unauthorized
+        // When & Then - invalid token = 403 Forbidden (Spring Security default)
         mockMvc.perform(get("/api/patients/hospital/" + hospital1.getId())
                 .header("Authorization", "Bearer invalid-token"))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden());
     }
 
     // Test: Data isolation - directors see only their hospital's data

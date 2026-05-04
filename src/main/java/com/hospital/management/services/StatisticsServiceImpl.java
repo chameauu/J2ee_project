@@ -2,6 +2,7 @@ package com.hospital.management.services;
 
 import com.hospital.management.dto.*;
 import com.hospital.management.entities.Doctor;
+import com.hospital.management.entities.Hospital;
 import com.hospital.management.enums.AppointmentStatus;
 import com.hospital.management.enums.PrescriptionStatus;
 import com.hospital.management.exceptions.ResourceNotFoundException;
@@ -26,6 +27,7 @@ public class StatisticsServiceImpl implements IStatisticsService {
     private final AppointmentRepository appointmentRepository;
     private final PrescriptionRepository prescriptionRepository;
     private final MedicalRecordRepository medicalRecordRepository;
+    private final HospitalRepository hospitalRepository;
 
     @Override
     public DashboardStatsDTO getDashboardStats() {
@@ -122,9 +124,64 @@ public class StatisticsServiceImpl implements IStatisticsService {
                 .build();
     }
 
+    // Phase 10.8: Hospital-specific director dashboard
+    @Override
+    public DirectorDashboardDTO getDirectorDashboardByHospital(Long hospitalId) {
+        // Get hospital details
+        Hospital hospital = hospitalRepository.findById(hospitalId)
+                .orElseThrow(() -> new ResourceNotFoundException("Hospital not found with id: " + hospitalId));
+        
+        // Get counts for specific hospital using existing methods
+        Long totalDoctors = doctorRepository.countByHospitalId(hospitalId);
+        Long totalAppointments = appointmentRepository.countByHospitalId(hospitalId);
+        Long completedAppointments = appointmentRepository.countByHospitalIdAndStatus(hospitalId, AppointmentStatus.COMPLETED);
+        Long scheduledAppointments = appointmentRepository.countByHospitalIdAndStatus(hospitalId, AppointmentStatus.SCHEDULED);
+        Long cancelledAppointments = appointmentRepository.countByHospitalIdAndStatus(hospitalId, AppointmentStatus.CANCELLED);
+
+        // Calculate KPIs
+        Double appointmentCompletionRate = totalAppointments > 0 
+                ? (completedAppointments.doubleValue() / totalAppointments.doubleValue()) * 100 
+                : 0.0;
+        
+        Double averageAppointmentsPerDoctor = totalDoctors > 0 
+                ? totalAppointments.doubleValue() / totalDoctors.doubleValue() 
+                : 0.0;
+
+        return DirectorDashboardDTO.builder()
+                .hospitalId(hospitalId)
+                .hospitalName(hospital.getName())
+                .totalDoctors(totalDoctors)
+                .totalPatients(patientRepository.countByHospitalId(hospitalId))
+                .totalPharmacists(pharmacistRepository.countByHospitalId(hospitalId))
+                .totalAppointments(totalAppointments)
+                .totalMedicalRecords(medicalRecordRepository.countByHospitalId(hospitalId))
+                .totalPrescriptions(prescriptionRepository.countByHospitalId(hospitalId))
+                .appointmentCompletionRate(Math.round(appointmentCompletionRate * 100.0) / 100.0)
+                .doctorUtilizationRate(0.0)
+                .averageAppointmentsPerDoctor(Math.round(averageAppointmentsPerDoctor * 100.0) / 100.0)
+                .averagePatientsPerDoctor(0.0)
+                .todaysAppointments(0L)
+                .todaysCompletedAppointments(0L)
+                .scheduledAppointments(scheduledAppointments)
+                .completedAppointments(completedAppointments)
+                .cancelledAppointments(cancelledAppointments)
+                .activePrescriptions(prescriptionRepository.countByHospitalIdAndStatus(hospitalId, PrescriptionStatus.ACTIVE))
+                .dispensedPrescriptions(prescriptionRepository.countByHospitalIdAndStatus(hospitalId, PrescriptionStatus.DISPENSED))
+                .build();
+    }
+
     @Override
     public List<DoctorPerformanceDTO> getAllDoctorsPerformance() {
         List<Doctor> doctors = doctorRepository.findAll();
+        return doctors.stream()
+                .map(this::buildDoctorPerformance)
+                .collect(Collectors.toList());
+    }
+
+    // Phase 10.8: Hospital-specific doctor performance
+    @Override
+    public List<DoctorPerformanceDTO> getDoctorsPerformanceByHospital(Long hospitalId) {
+        List<Doctor> doctors = doctorRepository.findByHospitalId(hospitalId);
         return doctors.stream()
                 .map(this::buildDoctorPerformance)
                 .collect(Collectors.toList());

@@ -86,6 +86,22 @@ public class PrescriptionController {
         return ResponseEntity.ok(prescriptions);
     }
 
+    // Phase 10.8: Alternative path for doctor prescriptions
+    @GetMapping("/prescriptions/doctor/{doctorId}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('DOCTOR') and @hospitalAuthorizationService.isOwner(#doctorId, authentication))")
+    public ResponseEntity<List<PrescriptionDTO>> getPrescriptionsByDoctor(@PathVariable Long doctorId) {
+        List<PrescriptionDTO> prescriptions = prescriptionService.getDoctorPrescriptions(doctorId);
+        return ResponseEntity.ok(prescriptions);
+    }
+
+    // Phase 10.8: Alternative path for patient prescriptions
+    @GetMapping("/prescriptions/patient/{patientId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or hasRole('PHARMACIST') or (hasRole('PATIENT') and @hospitalAuthorizationService.isOwner(#patientId, authentication))")
+    public ResponseEntity<List<PrescriptionDTO>> getPrescriptionsByPatient(@PathVariable Long patientId) {
+        List<PrescriptionDTO> prescriptions = prescriptionService.getPatientPrescriptions(patientId);
+        return ResponseEntity.ok(prescriptions);
+    }
+
     @GetMapping("/medical-records/{medicalRecordId}/prescriptions")
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST')")
     public ResponseEntity<List<PrescriptionDTO>> getMedicalRecordPrescriptions(@PathVariable Long medicalRecordId) {

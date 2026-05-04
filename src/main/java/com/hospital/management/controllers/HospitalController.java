@@ -1,7 +1,11 @@
 package com.hospital.management.controllers;
 
+import com.hospital.management.dto.DoctorDTO;
 import com.hospital.management.dto.HospitalDTO;
+import com.hospital.management.dto.PatientDTO;
+import com.hospital.management.services.IDoctorService;
 import com.hospital.management.services.IHospitalService;
+import com.hospital.management.services.IPatientService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,6 +21,8 @@ import java.util.List;
 public class HospitalController {
 
     private final IHospitalService hospitalService;
+    private final IDoctorService doctorService;
+    private final IPatientService patientService;
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
@@ -60,5 +66,21 @@ public class HospitalController {
     public ResponseEntity<List<HospitalDTO>> searchHospitals(@RequestParam String keyword) {
         List<HospitalDTO> hospitals = hospitalService.searchHospitals(keyword);
         return ResponseEntity.ok(hospitals);
+    }
+
+    // Phase 10.8: Hospital-scoped endpoints for doctors
+    @GetMapping("/{hospitalId}/doctors")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('DIRECTOR') and @hospitalAuthorizationService.canAccessHospital(#hospitalId, authentication))")
+    public ResponseEntity<List<DoctorDTO>> getHospitalDoctors(@PathVariable Long hospitalId) {
+        List<DoctorDTO> doctors = doctorService.getDoctorsByHospital(hospitalId);
+        return ResponseEntity.ok(doctors);
+    }
+
+    // Phase 10.8: Hospital-scoped endpoints for patients
+    @GetMapping("/{hospitalId}/patients")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('DIRECTOR') and @hospitalAuthorizationService.canAccessHospital(#hospitalId, authentication))")
+    public ResponseEntity<List<PatientDTO>> getHospitalPatients(@PathVariable Long hospitalId) {
+        List<PatientDTO> patients = patientService.getPatientsByHospital(hospitalId);
+        return ResponseEntity.ok(patients);
     }
 }

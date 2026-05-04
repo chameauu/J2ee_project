@@ -2,6 +2,7 @@ package com.hospital.management.security;
 
 import com.hospital.management.entities.Doctor;
 import com.hospital.management.entities.Hospital;
+import com.hospital.management.entities.HospitalDirector;
 import com.hospital.management.entities.Patient;
 import com.hospital.management.entities.User;
 import com.hospital.management.repositories.HospitalDirectorRepository;
@@ -66,7 +67,7 @@ class HospitalAuthorizationServicePhase105Test {
         // Given
         Long targetUserId = 10L;
         Long hospitalId = 1L;
-        String userEmail = "doctor@hospital.com";
+        String userEmail = "director@hospital.com"; // Changed to DIRECTOR role
 
         Hospital hospital = new Hospital();
         hospital.setId(hospitalId);
@@ -77,8 +78,8 @@ class HospitalAuthorizationServicePhase105Test {
         targetUser.setEmail("patient@hospital.com");
         targetUser.setHospital(hospital);
 
-        // Authenticated user (doctor in same hospital)
-        Doctor authUser = new Doctor();
+        // Authenticated user (director in same hospital) - Changed from Doctor to Director
+        HospitalDirector authUser = new HospitalDirector();
         authUser.setId(20L);
         authUser.setEmail(userEmail);
         authUser.setHospital(hospital);
@@ -86,7 +87,7 @@ class HospitalAuthorizationServicePhase105Test {
         Authentication authentication = mock(Authentication.class);
         when(authentication.getName()).thenReturn(userEmail);
         when(authentication.getAuthorities()).thenReturn(
-            (Collection) List.of(new SimpleGrantedAuthority("ROLE_DOCTOR"))
+            (Collection) List.of(new SimpleGrantedAuthority("ROLE_DIRECTOR")) // Changed to DIRECTOR
         );
 
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(targetUser));
@@ -98,7 +99,8 @@ class HospitalAuthorizationServicePhase105Test {
         // Then
         assertTrue(result);
         verify(userRepository).findById(targetUserId);
-        verify(userRepository).findByEmail(userEmail);
+        // findByEmail is called twice: once to get auth user, once in belongsToHospital
+        verify(userRepository, atLeastOnce()).findByEmail(userEmail);
     }
 
     @Test
@@ -151,12 +153,22 @@ class HospitalAuthorizationServicePhase105Test {
         Long targetUserId = 999L;
         String userEmail = "doctor@hospital.com";
 
+        Hospital hospital = new Hospital();
+        hospital.setId(1L);
+
+        // Authenticated user exists
+        Doctor authUser = new Doctor();
+        authUser.setId(20L);
+        authUser.setEmail(userEmail);
+        authUser.setHospital(hospital);
+
         Authentication authentication = mock(Authentication.class);
         when(authentication.getName()).thenReturn(userEmail);
         when(authentication.getAuthorities()).thenReturn(
             (Collection) List.of(new SimpleGrantedAuthority("ROLE_DOCTOR"))
         );
 
+        when(userRepository.findByEmail(userEmail)).thenReturn(Optional.of(authUser));
         when(userRepository.findById(targetUserId)).thenReturn(Optional.empty());
 
         // When
@@ -164,8 +176,8 @@ class HospitalAuthorizationServicePhase105Test {
 
         // Then
         assertFalse(result);
+        verify(userRepository).findByEmail(userEmail);
         verify(userRepository).findById(targetUserId);
-        verify(userRepository, never()).findByEmail(any());
     }
 
     @Test
@@ -174,11 +186,20 @@ class HospitalAuthorizationServicePhase105Test {
         Long targetUserId = 10L;
         String userEmail = "doctor@hospital.com";
 
+        Hospital hospital = new Hospital();
+        hospital.setId(1L);
+
         // Target user with no hospital
         Patient targetUser = new Patient();
         targetUser.setId(targetUserId);
         targetUser.setEmail("patient@hospital.com");
         targetUser.setHospital(null);
+
+        // Authenticated user with hospital
+        Doctor authUser = new Doctor();
+        authUser.setId(20L);
+        authUser.setEmail(userEmail);
+        authUser.setHospital(hospital);
 
         Authentication authentication = mock(Authentication.class);
         when(authentication.getName()).thenReturn(userEmail);
@@ -187,6 +208,7 @@ class HospitalAuthorizationServicePhase105Test {
         );
 
         when(userRepository.findById(targetUserId)).thenReturn(Optional.of(targetUser));
+        when(userRepository.findByEmail(userEmail)).thenReturn(Optional.of(authUser));
 
         // When
         boolean result = authorizationService.canAccessUserData(targetUserId, authentication);
@@ -194,7 +216,7 @@ class HospitalAuthorizationServicePhase105Test {
         // Then
         assertFalse(result);
         verify(userRepository).findById(targetUserId);
-        verify(userRepository, never()).findByEmail(any());
+        verify(userRepository).findByEmail(userEmail);
     }
 
     @Test
@@ -237,13 +259,14 @@ class HospitalAuthorizationServicePhase105Test {
             (Collection) List.of(new SimpleGrantedAuthority("ROLE_DOCTOR"))
         );
 
-        when(userRepository.findById(targetUserId)).thenThrow(new RuntimeException("Database error"));
+        // Throw exception when trying to find authenticated user (happens first)
+        when(userRepository.findByEmail(userEmail)).thenThrow(new RuntimeException("Database error"));
 
         // When
         boolean result = authorizationService.canAccessUserData(targetUserId, authentication);
 
         // Then
         assertFalse(result);
-        verify(userRepository).findById(targetUserId);
+        verify(userRepository).findByEmail(userEmail);
     }
 }

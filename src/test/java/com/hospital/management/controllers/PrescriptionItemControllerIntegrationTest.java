@@ -1,7 +1,6 @@
 package com.hospital.management.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hospital.management.config.TestSecurityConfig;
 import com.hospital.management.dto.MedicationDTO;
 import com.hospital.management.dto.PrescriptionDTO;
 import com.hospital.management.dto.PrescriptionItemDTO;
@@ -31,7 +30,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 @ActiveProfiles("test")
-@Import(TestSecurityConfig.class)
 class PrescriptionItemControllerIntegrationTest {
 
     @Autowired

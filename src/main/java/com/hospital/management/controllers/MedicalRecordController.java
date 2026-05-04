@@ -44,8 +44,7 @@ public class MedicalRecordController {
 
     // Phase 10.5: Hospital-scoped authorization for patient medical records
     @GetMapping("/patients/{patientId}/medical-records")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT') and " +
-                  "@hospitalAuthorizationService.canAccessUserData(#patientId, authentication)")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and @hospitalAuthorizationService.isOwner(#patientId, authentication))")
     public ResponseEntity<List<MedicalRecordDTO>> getPatientMedicalHistory(@PathVariable Long patientId) {
         List<MedicalRecordDTO> records = medicalRecordService.getPatientMedicalHistory(patientId);
         return ResponseEntity.ok(records);
@@ -53,8 +52,7 @@ public class MedicalRecordController {
 
     // Phase 10.5: Hospital-scoped authorization for doctor medical records
     @GetMapping("/doctors/{doctorId}/medical-records")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') and " +
-                  "@hospitalAuthorizationService.canAccessUserData(#doctorId, authentication)")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('DOCTOR') and @hospitalAuthorizationService.isOwner(#doctorId, authentication))")
     public ResponseEntity<List<MedicalRecordDTO>> getDoctorMedicalRecords(@PathVariable Long doctorId) {
         List<MedicalRecordDTO> records = medicalRecordService.getDoctorMedicalRecords(doctorId);
         return ResponseEntity.ok(records);

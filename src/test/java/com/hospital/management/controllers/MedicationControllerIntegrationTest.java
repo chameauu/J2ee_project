@@ -1,46 +1,42 @@
 package com.hospital.management.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hospital.management.config.TestSecurityConfig;
 import com.hospital.management.dto.MedicationDTO;
 import com.hospital.management.enums.MedicationType;
+import com.hospital.management.enums.UserRole;
+import com.hospital.management.repositories.AdministratorRepository;
 import com.hospital.management.repositories.MedicationRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
-@ActiveProfiles("test")
-@Import(TestSecurityConfig.class)
-class MedicationControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+class MedicationControllerIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private MedicationRepository medicationRepository;
 
+    @Autowired
+    private AdministratorRepository administratorRepository;
+
     private MedicationDTO medicationDTO;
+    private String adminToken;
 
     @BeforeEach
     void setUp() {
+        // Clean up
+        medicationRepository.deleteAll();
+        administratorRepository.deleteAll();
+        
+        // Create admin user and generate token
+        testAuthUtils.createTestAdmin("admin@example.com");
+        adminToken = testAuthUtils.generateToken("admin@example.com", UserRole.ADMIN);
+        
+        // Setup test DTO
         medicationDTO = new MedicationDTO();
         medicationDTO.setName("Aspirin");
         medicationDTO.setGenericName("Acetylsalicylic Acid");
@@ -53,6 +49,7 @@ class MedicationControllerIntegrationTest {
     @Test
     void shouldCreateMedication() throws Exception {
         mockMvc.perform(post("/api/pharmacy/medications")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(medicationDTO)))
                 .andExpect(status().isCreated())
@@ -68,6 +65,7 @@ class MedicationControllerIntegrationTest {
         medicationDTO.setName(null);
 
         mockMvc.perform(post("/api/pharmacy/medications")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(medicationDTO)))
                 .andExpect(status().isBadRequest());
@@ -76,6 +74,7 @@ class MedicationControllerIntegrationTest {
     @Test
     void shouldGetMedicationById() throws Exception {
         String response = mockMvc.perform(post("/api/pharmacy/medications")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(medicationDTO)))
                 .andExpect(status().isCreated())
@@ -83,7 +82,8 @@ class MedicationControllerIntegrationTest {
 
         MedicationDTO created = objectMapper.readValue(response, MedicationDTO.class);
 
-        mockMvc.perform(get("/api/pharmacy/medications/{id}", created.getId()))
+        mockMvc.perform(get("/api/pharmacy/medications/{id}", created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(created.getId().intValue())))
                 .andExpect(jsonPath("$.name", is("Aspirin")));
@@ -91,13 +91,15 @@ class MedicationControllerIntegrationTest {
 
     @Test
     void shouldReturn404WhenMedicationNotFound() throws Exception {
-        mockMvc.perform(get("/api/pharmacy/medications/{id}", 999L))
+        mockMvc.perform(get("/api/pharmacy/medications/{id}", 999L)
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void shouldUpdateMedication() throws Exception {
         String response = mockMvc.perform(post("/api/pharmacy/medications")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(medicationDTO)))
                 .andExpect(status().isCreated())
@@ -108,6 +110,7 @@ class MedicationControllerIntegrationTest {
         created.setDescription("Updated description");
 
         mockMvc.perform(put("/api/pharmacy/medications/{id}", created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(created)))
                 .andExpect(status().isOk())
@@ -118,6 +121,7 @@ class MedicationControllerIntegrationTest {
     @Test
     void shouldReturn404WhenUpdatingNonExistentMedication() throws Exception {
         mockMvc.perform(put("/api/pharmacy/medications/{id}", 999L)
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(medicationDTO)))
                 .andExpect(status().isNotFound());
@@ -126,6 +130,7 @@ class MedicationControllerIntegrationTest {
     @Test
     void shouldDeleteMedication() throws Exception {
         String response = mockMvc.perform(post("/api/pharmacy/medications")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(medicationDTO)))
                 .andExpect(status().isCreated())
@@ -133,22 +138,26 @@ class MedicationControllerIntegrationTest {
 
         MedicationDTO created = objectMapper.readValue(response, MedicationDTO.class);
 
-        mockMvc.perform(delete("/api/pharmacy/medications/{id}", created.getId()))
+        mockMvc.perform(delete("/api/pharmacy/medications/{id}", created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/pharmacy/medications/{id}", created.getId()))
+        mockMvc.perform(get("/api/pharmacy/medications/{id}", created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void shouldReturn404WhenDeletingNonExistentMedication() throws Exception {
-        mockMvc.perform(delete("/api/pharmacy/medications/{id}", 999L))
+        mockMvc.perform(delete("/api/pharmacy/medications/{id}", 999L)
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void shouldGetAllMedications() throws Exception {
         mockMvc.perform(post("/api/pharmacy/medications")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(medicationDTO)))
                 .andExpect(status().isCreated());
@@ -162,11 +171,13 @@ class MedicationControllerIntegrationTest {
         medication2.setDescription("Pain reliever");
 
         mockMvc.perform(post("/api/pharmacy/medications")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(medication2)))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/pharmacy/medications"))
+        mockMvc.perform(get("/api/pharmacy/medications")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(2));
     }
@@ -174,12 +185,14 @@ class MedicationControllerIntegrationTest {
     @Test
     void shouldSearchMedications() throws Exception {
         mockMvc.perform(post("/api/pharmacy/medications")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(medicationDTO)))
                 .andExpect(status().isCreated());
 
         mockMvc.perform(get("/api/pharmacy/medications/search")
-                        .param("keyword", "Aspirin"))
+                        .param("keyword", "Aspirin")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].name", is("Aspirin")));
@@ -188,11 +201,13 @@ class MedicationControllerIntegrationTest {
     @Test
     void shouldGetMedicationsByType() throws Exception {
         mockMvc.perform(post("/api/pharmacy/medications")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(medicationDTO)))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/pharmacy/medications/type/{type}", "TABLET"))
+        mockMvc.perform(get("/api/pharmacy/medications/type/{type}", "TABLET")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].type", is("TABLET")));
@@ -201,11 +216,13 @@ class MedicationControllerIntegrationTest {
     @Test
     void shouldGetMedicationsByManufacturer() throws Exception {
         mockMvc.perform(post("/api/pharmacy/medications")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(medicationDTO)))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/pharmacy/medications/manufacturer/{manufacturer}", "PharmaCorp"))
+        mockMvc.perform(get("/api/pharmacy/medications/manufacturer/{manufacturer}", "PharmaCorp")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].manufacturer", is("PharmaCorp")));

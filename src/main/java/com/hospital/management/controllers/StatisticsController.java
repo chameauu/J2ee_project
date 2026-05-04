@@ -24,6 +24,13 @@ public class StatisticsController {
         return ResponseEntity.ok(statisticsService.getDashboardStats());
     }
 
+    // Phase 10.8: System-wide statistics endpoint
+    @GetMapping("/statistics")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<DashboardStatsDTO> getSystemStatistics() {
+        return ResponseEntity.ok(statisticsService.getDashboardStats());
+    }
+
     @GetMapping("/doctors/{doctorId}/statistics")
     @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
     public ResponseEntity<DoctorStatsDTO> getDoctorStats(@PathVariable Long doctorId) {

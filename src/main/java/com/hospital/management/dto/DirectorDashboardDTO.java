@@ -10,6 +10,10 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class DirectorDashboardDTO {
+    // Hospital Context (Phase 10.8)
+    private Long hospitalId;
+    private String hospitalName;
+    
     // System Overview
     private Long totalDoctors;
     private Long totalPatients;

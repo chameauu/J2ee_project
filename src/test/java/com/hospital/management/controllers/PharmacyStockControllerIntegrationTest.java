@@ -1,22 +1,18 @@
 package com.hospital.management.controllers;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.hospital.management.config.TestSecurityConfig;
-import com.hospital.management.dto.HospitalDTO;
 import com.hospital.management.dto.MedicationDTO;
 import com.hospital.management.dto.PharmacyStockDTO;
+import com.hospital.management.entities.Hospital;
 import com.hospital.management.enums.MedicationType;
+import com.hospital.management.enums.UserRole;
+import com.hospital.management.repositories.AdministratorRepository;
+import com.hospital.management.repositories.HospitalRepository;
+import com.hospital.management.repositories.MedicationRepository;
 import com.hospital.management.repositories.PharmacyStockRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 
@@ -25,31 +21,41 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
-@AutoConfigureMockMvc
-@Transactional
-@ActiveProfiles("test")
-@Import(TestSecurityConfig.class)
-class PharmacyStockControllerIntegrationTest {
-
-    @Autowired
-    private MockMvc mockMvc;
-
-    @Autowired
-    private ObjectMapper objectMapper;
+class PharmacyStockControllerIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private PharmacyStockRepository pharmacyStockRepository;
 
+    @Autowired
+    private MedicationRepository medicationRepository;
+
+    @Autowired
+    private HospitalRepository hospitalRepository;
+
+    @Autowired
+    private AdministratorRepository administratorRepository;
+
+    private Hospital testHospital;
     private MedicationDTO medicationDTO;
     private PharmacyStockDTO pharmacyStockDTO;
-    private Long hospitalId;
+    private String adminToken;
 
     @BeforeEach
     void setUp() throws Exception {
-        // Phase 10.6: Create hospital first
-        hospitalId = createHospital();
+        // Clean up
+        pharmacyStockRepository.deleteAll();
+        medicationRepository.deleteAll();
+        administratorRepository.deleteAll();
+        hospitalRepository.deleteAll();
         
+        // Create test hospital using testAuthUtils
+        testHospital = testAuthUtils.createTestHospital("Test Hospital");
+        
+        // Create admin user and generate token
+        testAuthUtils.createTestAdmin("admin@example.com");
+        adminToken = testAuthUtils.generateToken("admin@example.com", UserRole.ADMIN);
+        
+        // Setup medication DTO
         medicationDTO = new MedicationDTO();
         medicationDTO.setName("Aspirin");
         medicationDTO.setGenericName("Acetylsalicylic Acid");
@@ -59,27 +65,9 @@ class PharmacyStockControllerIntegrationTest {
         medicationDTO.setDescription("Pain reliever");
     }
 
-    private Long createHospital() throws Exception {
-        HospitalDTO hospitalDTO = new HospitalDTO();
-        hospitalDTO.setName("Test Hospital");
-        hospitalDTO.setAddress("123 Test St");
-        hospitalDTO.setPhone("555-0001");
-        hospitalDTO.setEmail("test@hospital.com");
-        hospitalDTO.setRegistrationNumber("REG-TEST-001");
-        hospitalDTO.setEstablishedDate(LocalDate.of(2000, 1, 1));
-
-        String response = mockMvc.perform(post("/api/hospitals")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(hospitalDTO)))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-
-        HospitalDTO created = objectMapper.readValue(response, HospitalDTO.class);
-        return created.getId();
-    }
-
     private Long createMedication() throws Exception {
         String response = mockMvc.perform(post("/api/pharmacy/medications")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(medicationDTO)))
                 .andExpect(status().isCreated())
@@ -95,8 +83,7 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
-        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
-        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
+        pharmacyStockDTO.setHospitalId(testHospital.getId());
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -104,6 +91,7 @@ class PharmacyStockControllerIntegrationTest {
         pharmacyStockDTO.setUnitPrice(5.0);
 
         mockMvc.perform(post("/api/pharmacy/stock")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pharmacyStockDTO)))
                 .andExpect(status().isCreated())
@@ -119,6 +107,7 @@ class PharmacyStockControllerIntegrationTest {
         pharmacyStockDTO.setMedicationId(null);
 
         mockMvc.perform(post("/api/pharmacy/stock")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pharmacyStockDTO)))
                 .andExpect(status().isBadRequest());
@@ -130,7 +119,7 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
-        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
+        pharmacyStockDTO.setHospitalId(testHospital.getId());
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -138,6 +127,7 @@ class PharmacyStockControllerIntegrationTest {
         pharmacyStockDTO.setUnitPrice(5.0);
 
         String response = mockMvc.perform(post("/api/pharmacy/stock")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pharmacyStockDTO)))
                 .andExpect(status().isCreated())
@@ -145,7 +135,8 @@ class PharmacyStockControllerIntegrationTest {
 
         PharmacyStockDTO created = objectMapper.readValue(response, PharmacyStockDTO.class);
 
-        mockMvc.perform(get("/api/pharmacy/stock/{id}", created.getId()))
+        mockMvc.perform(get("/api/pharmacy/stock/{id}", created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id", is(created.getId().intValue())))
                 .andExpect(jsonPath("$.quantity", is(100)));
@@ -153,7 +144,8 @@ class PharmacyStockControllerIntegrationTest {
 
     @Test
     void shouldReturn404WhenStockNotFound() throws Exception {
-        mockMvc.perform(get("/api/pharmacy/stock/{id}", 999L))
+        mockMvc.perform(get("/api/pharmacy/stock/{id}", 999L)
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound());
     }
 
@@ -163,7 +155,7 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
-        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
+        pharmacyStockDTO.setHospitalId(testHospital.getId());
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -171,6 +163,7 @@ class PharmacyStockControllerIntegrationTest {
         pharmacyStockDTO.setUnitPrice(5.0);
 
         String response = mockMvc.perform(post("/api/pharmacy/stock")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pharmacyStockDTO)))
                 .andExpect(status().isCreated())
@@ -181,6 +174,7 @@ class PharmacyStockControllerIntegrationTest {
         created.setUnitPrice(6.0);
 
         mockMvc.perform(put("/api/pharmacy/stock/{id}", created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(created)))
                 .andExpect(status().isOk())
@@ -192,7 +186,7 @@ class PharmacyStockControllerIntegrationTest {
     void shouldReturn404WhenUpdatingNonExistentStock() throws Exception {
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(1L);
-        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
+        pharmacyStockDTO.setHospitalId(testHospital.getId());
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -200,6 +194,7 @@ class PharmacyStockControllerIntegrationTest {
         pharmacyStockDTO.setUnitPrice(5.0);
 
         mockMvc.perform(put("/api/pharmacy/stock/{id}", 999L)
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pharmacyStockDTO)))
                 .andExpect(status().isNotFound());
@@ -211,7 +206,7 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
-        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
+        pharmacyStockDTO.setHospitalId(testHospital.getId());
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -219,6 +214,7 @@ class PharmacyStockControllerIntegrationTest {
         pharmacyStockDTO.setUnitPrice(5.0);
 
         String response = mockMvc.perform(post("/api/pharmacy/stock")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pharmacyStockDTO)))
                 .andExpect(status().isCreated())
@@ -226,16 +222,19 @@ class PharmacyStockControllerIntegrationTest {
 
         PharmacyStockDTO created = objectMapper.readValue(response, PharmacyStockDTO.class);
 
-        mockMvc.perform(delete("/api/pharmacy/stock/{id}", created.getId()))
+        mockMvc.perform(delete("/api/pharmacy/stock/{id}", created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/pharmacy/stock/{id}", created.getId()))
+        mockMvc.perform(get("/api/pharmacy/stock/{id}", created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound());
     }
 
     @Test
     void shouldReturn404WhenDeletingNonExistentStock() throws Exception {
-        mockMvc.perform(delete("/api/pharmacy/stock/{id}", 999L))
+        mockMvc.perform(delete("/api/pharmacy/stock/{id}", 999L)
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound());
     }
 
@@ -245,7 +244,7 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
-        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
+        pharmacyStockDTO.setHospitalId(testHospital.getId());
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -253,11 +252,13 @@ class PharmacyStockControllerIntegrationTest {
         pharmacyStockDTO.setUnitPrice(5.0);
 
         mockMvc.perform(post("/api/pharmacy/stock")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pharmacyStockDTO)))
                 .andExpect(status().isCreated());
 
-        mockMvc.perform(get("/api/pharmacy/stock"))
+        mockMvc.perform(get("/api/pharmacy/stock")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(1));
     }
@@ -268,7 +269,7 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
-        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
+        pharmacyStockDTO.setHospitalId(testHospital.getId());
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -276,6 +277,7 @@ class PharmacyStockControllerIntegrationTest {
         pharmacyStockDTO.setUnitPrice(5.0);
 
         String response = mockMvc.perform(post("/api/pharmacy/stock")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pharmacyStockDTO)))
                 .andExpect(status().isCreated())
@@ -284,6 +286,7 @@ class PharmacyStockControllerIntegrationTest {
         PharmacyStockDTO created = objectMapper.readValue(response, PharmacyStockDTO.class);
 
         mockMvc.perform(put("/api/pharmacy/stock/{id}/reduce", created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .param("amount", "10"))
                 .andExpect(status().isOk());
     }
@@ -294,7 +297,7 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
-        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
+        pharmacyStockDTO.setHospitalId(testHospital.getId());
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -302,6 +305,7 @@ class PharmacyStockControllerIntegrationTest {
         pharmacyStockDTO.setUnitPrice(5.0);
 
         String response = mockMvc.perform(post("/api/pharmacy/stock")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(pharmacyStockDTO)))
                 .andExpect(status().isCreated())
@@ -310,25 +314,29 @@ class PharmacyStockControllerIntegrationTest {
         PharmacyStockDTO created = objectMapper.readValue(response, PharmacyStockDTO.class);
 
         mockMvc.perform(put("/api/pharmacy/stock/{id}/add", created.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
                         .param("amount", "50"))
                 .andExpect(status().isOk());
     }
 
     @Test
     void shouldGetLowStockItems() throws Exception {
-        mockMvc.perform(get("/api/pharmacy/stock/low"))
+        mockMvc.perform(get("/api/pharmacy/stock/low")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk());
     }
 
     @Test
     void shouldGetExpiringSoonItems() throws Exception {
-        mockMvc.perform(get("/api/pharmacy/stock/expiring"))
+        mockMvc.perform(get("/api/pharmacy/stock/expiring")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk());
     }
 
     @Test
     void shouldGetExpiredStock() throws Exception {
-        mockMvc.perform(get("/api/pharmacy/stock/expired"))
+        mockMvc.perform(get("/api/pharmacy/stock/expired")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isOk());
     }
 }

@@ -75,4 +75,20 @@ public class AppointmentController {
         }
         return ResponseEntity.ok(appointments);
     }
+
+    // Phase 10.8: Alternative path for doctor appointments
+    @GetMapping("/appointments/doctor/{doctorId}")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('DOCTOR') and @hospitalAuthorizationService.isOwner(#doctorId, authentication))")
+    public ResponseEntity<List<AppointmentDTO>> getAppointmentsByDoctor(@PathVariable Long doctorId) {
+        List<AppointmentDTO> appointments = appointmentService.getDoctorAppointments(doctorId);
+        return ResponseEntity.ok(appointments);
+    }
+
+    // Phase 10.8: Alternative path for patient appointments
+    @GetMapping("/appointments/patient/{patientId}")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('DOCTOR') or (hasRole('PATIENT') and @hospitalAuthorizationService.isOwner(#patientId, authentication))")
+    public ResponseEntity<List<AppointmentDTO>> getAppointmentsByPatient(@PathVariable Long patientId) {
+        List<AppointmentDTO> appointments = appointmentService.getPatientAppointments(patientId);
+        return ResponseEntity.ok(appointments);
+    }
 }
