@@ -59,22 +59,28 @@ public class PrescriptionController {
         return ResponseEntity.noContent().build();
     }
 
+    // Phase 10.5: Hospital-scoped authorization for patient prescriptions
     @GetMapping("/patients/{patientId}/prescriptions")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST', 'PATIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST', 'PATIENT') and " +
+                  "@hospitalAuthorizationService.canAccessUserData(#patientId, authentication)")
     public ResponseEntity<List<PrescriptionDTO>> getPatientPrescriptions(@PathVariable Long patientId) {
         List<PrescriptionDTO> prescriptions = prescriptionService.getPatientPrescriptions(patientId);
         return ResponseEntity.ok(prescriptions);
     }
 
+    // Phase 10.5: Hospital-scoped authorization for patient active prescriptions
     @GetMapping("/patients/{patientId}/prescriptions/active")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST', 'PATIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST', 'PATIENT') and " +
+                  "@hospitalAuthorizationService.canAccessUserData(#patientId, authentication)")
     public ResponseEntity<List<PrescriptionDTO>> getPatientActivePrescriptions(@PathVariable Long patientId) {
         List<PrescriptionDTO> prescriptions = prescriptionService.getPatientActivePrescriptions(patientId);
         return ResponseEntity.ok(prescriptions);
     }
 
+    // Phase 10.5: Hospital-scoped authorization for doctor prescriptions
     @GetMapping("/doctors/{doctorId}/prescriptions")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') and " +
+                  "@hospitalAuthorizationService.canAccessUserData(#doctorId, authentication)")
     public ResponseEntity<List<PrescriptionDTO>> getDoctorPrescriptions(@PathVariable Long doctorId) {
         List<PrescriptionDTO> prescriptions = prescriptionService.getDoctorPrescriptions(doctorId);
         return ResponseEntity.ok(prescriptions);

@@ -50,15 +50,19 @@ public class AppointmentController {
         return ResponseEntity.ok(cancelled);
     }
 
+    // Phase 10.5: Hospital-scoped authorization for patient appointments
     @GetMapping("/patients/{patientId}/appointments")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT') and " +
+                  "@hospitalAuthorizationService.canAccessUserData(#patientId, authentication)")
     public ResponseEntity<List<AppointmentDTO>> getPatientAppointments(@PathVariable Long patientId) {
         List<AppointmentDTO> appointments = appointmentService.getPatientAppointments(patientId);
         return ResponseEntity.ok(appointments);
     }
 
+    // Phase 10.5: Hospital-scoped authorization for doctor appointments
     @GetMapping("/doctors/{doctorId}/appointments")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') and " +
+                  "@hospitalAuthorizationService.canAccessUserData(#doctorId, authentication)")
     public ResponseEntity<List<AppointmentDTO>> getDoctorAppointments(
             @PathVariable Long doctorId,
             @RequestParam(required = false) AppointmentStatus status) {

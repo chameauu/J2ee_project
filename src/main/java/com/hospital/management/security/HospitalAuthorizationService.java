@@ -212,4 +212,58 @@ public class HospitalAuthorizationService {
             return Optional.empty();
         }
     }
+
+    /**
+     * Check if authenticated user can access data belonging to a specific user.
+     * ADMIN can access any user's data.
+     * Others can only access data from users in their hospital.
+     * 
+     * Phase 10.5: Medical Entity Authorization
+     * 
+     * @param userId The ID of the user whose data is being accessed
+     * @param authentication The Spring Security authentication object
+     * @return true if user can access the data, false otherwise
+     */
+    @Transactional(readOnly = true)
+    public boolean canAccessUserData(Long userId, Authentication authentication) {
+        if (userId == null || authentication == null) {
+            log.warn("User ID or authentication is null");
+            return false;
+        }
+
+        String userEmail = authentication.getName();
+
+        // ADMIN can access any user's data
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(auth -> auth.getAuthority().equals("ROLE_ADMIN"));
+        
+        if (isAdmin) {
+            log.debug("Admin user {} accessing user {} data", userEmail, userId);
+            return true;
+        }
+
+        try {
+            // Get the target user's hospital
+            Optional<User> targetUserOpt = userRepository.findById(userId);
+            if (targetUserOpt.isEmpty()) {
+                log.warn("Target user not found with id: {}", userId);
+                return false;
+            }
+
+            User targetUser = targetUserOpt.get();
+            if (targetUser.getHospital() == null) {
+                log.debug("Target user {} has no hospital assigned", userId);
+                return false;
+            }
+
+            Long targetHospitalId = targetUser.getHospital().getId();
+
+            // Check if authenticated user belongs to the same hospital
+            return belongsToHospital(targetHospitalId, userEmail);
+
+        } catch (Exception e) {
+            log.error("Error checking user data access for user {}: {}", userId, e.getMessage());
+            return false;
+        }
+    }
 }
