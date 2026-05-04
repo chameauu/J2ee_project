@@ -28,7 +28,8 @@ public class PrescriptionController {
     }
 
     @GetMapping("/prescriptions/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST', 'PATIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST') or " +
+                  "(hasRole('PATIENT') and @hospitalAuthorizationService.canAccessPrescription(#id, authentication))")
     public ResponseEntity<PrescriptionDTO> getPrescription(@PathVariable Long id) {
         PrescriptionDTO prescription = prescriptionService.getPrescriptionById(id);
         return ResponseEntity.ok(prescription);

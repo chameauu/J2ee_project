@@ -349,4 +349,170 @@ class PatientControllerIntegrationTest extends BaseIntegrationTest {
                 .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken)))
                 .andExpect(status().isNotFound());
     }
+
+    // Phase 10.10: Owner-based authorization tests (Security Fix)
+    @Test
+    void patientShouldAccessTheirOwnData() throws Exception {
+        // Given - create a patient
+        PatientDTO patientDTO = new PatientDTO();
+        patientDTO.setFirstName("Jane");
+        patientDTO.setLastName("Patient");
+        patientDTO.setEmail("jane.patient@example.com");
+        patientDTO.setPhone("+1234567890");
+        patientDTO.setDateOfBirth(LocalDate.of(1990, 1, 1));
+        patientDTO.setGender(Gender.FEMALE);
+        patientDTO.setHospitalId(testHospital.getId());
+
+        String response = mockMvc.perform(post("/api/patients")
+                .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(patientDTO)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        PatientDTO created = objectMapper.readValue(response, PatientDTO.class);
+
+        // Generate token for the patient
+        String patientToken = testAuthUtils.generateToken("jane.patient@example.com", UserRole.PATIENT);
+
+        // When & Then - patient should access their own data
+        mockMvc.perform(get("/api/patients/" + created.getId())
+                .header("Authorization", testAuthUtils.getAuthorizationHeader(patientToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(created.getId()))
+                .andExpect(jsonPath("$.email").value("jane.patient@example.com"));
+    }
+
+    @Test
+    void patientShouldNotAccessOtherPatientsData() throws Exception {
+        // Given - create two patients
+        PatientDTO patient1 = new PatientDTO();
+        patient1.setFirstName("Patient");
+        patient1.setLastName("One");
+        patient1.setEmail("patient.one@example.com");
+        patient1.setPhone("+1111111111");
+        patient1.setDateOfBirth(LocalDate.of(1990, 1, 1));
+        patient1.setGender(Gender.MALE);
+        patient1.setHospitalId(testHospital.getId());
+
+        PatientDTO patient2 = new PatientDTO();
+        patient2.setFirstName("Patient");
+        patient2.setLastName("Two");
+        patient2.setEmail("patient.two@example.com");
+        patient2.setPhone("+2222222222");
+        patient2.setDateOfBirth(LocalDate.of(1991, 2, 2));
+        patient2.setGender(Gender.FEMALE);
+        patient2.setHospitalId(testHospital.getId());
+
+        String response1 = mockMvc.perform(post("/api/patients")
+                .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(patient1)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        String response2 = mockMvc.perform(post("/api/patients")
+                .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(patient2)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        PatientDTO createdPatient1 = objectMapper.readValue(response1, PatientDTO.class);
+        PatientDTO createdPatient2 = objectMapper.readValue(response2, PatientDTO.class);
+
+        // Generate token for patient 1
+        String patient1Token = testAuthUtils.generateToken("patient.one@example.com", UserRole.PATIENT);
+
+        // When & Then - patient 1 should NOT access patient 2's data
+        mockMvc.perform(get("/api/patients/" + createdPatient2.getId())
+                .header("Authorization", testAuthUtils.getAuthorizationHeader(patient1Token)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void patientShouldUpdateTheirOwnData() throws Exception {
+        // Given - create a patient
+        PatientDTO patientDTO = new PatientDTO();
+        patientDTO.setFirstName("Update");
+        patientDTO.setLastName("Test");
+        patientDTO.setEmail("update.test@example.com");
+        patientDTO.setPhone("+1234567890");
+        patientDTO.setDateOfBirth(LocalDate.of(1990, 1, 1));
+        patientDTO.setGender(Gender.MALE);
+        patientDTO.setHospitalId(testHospital.getId());
+
+        String response = mockMvc.perform(post("/api/patients")
+                .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(patientDTO)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        PatientDTO created = objectMapper.readValue(response, PatientDTO.class);
+
+        // Generate token for the patient
+        String patientToken = testAuthUtils.generateToken("update.test@example.com", UserRole.PATIENT);
+
+        // Update patient's own data
+        created.setPhone("+9999999999");
+
+        // When & Then - patient should update their own data
+        mockMvc.perform(put("/api/patients/" + created.getId())
+                .header("Authorization", testAuthUtils.getAuthorizationHeader(patientToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(created)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.phone").value("+9999999999"));
+    }
+
+    @Test
+    void patientShouldNotUpdateOtherPatientsData() throws Exception {
+        // Given - create two patients
+        PatientDTO patient1 = new PatientDTO();
+        patient1.setFirstName("Patient");
+        patient1.setLastName("One");
+        patient1.setEmail("patient.one.update@example.com");
+        patient1.setPhone("+1111111111");
+        patient1.setDateOfBirth(LocalDate.of(1990, 1, 1));
+        patient1.setGender(Gender.MALE);
+        patient1.setHospitalId(testHospital.getId());
+
+        PatientDTO patient2 = new PatientDTO();
+        patient2.setFirstName("Patient");
+        patient2.setLastName("Two");
+        patient2.setEmail("patient.two.update@example.com");
+        patient2.setPhone("+2222222222");
+        patient2.setDateOfBirth(LocalDate.of(1991, 2, 2));
+        patient2.setGender(Gender.FEMALE);
+        patient2.setHospitalId(testHospital.getId());
+
+        mockMvc.perform(post("/api/patients")
+                .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(patient1)))
+                .andExpect(status().isCreated());
+
+        String response2 = mockMvc.perform(post("/api/patients")
+                .header("Authorization", testAuthUtils.getAuthorizationHeader(adminToken))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(patient2)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        PatientDTO createdPatient2 = objectMapper.readValue(response2, PatientDTO.class);
+
+        // Generate token for patient 1
+        String patient1Token = testAuthUtils.generateToken("patient.one.update@example.com", UserRole.PATIENT);
+
+        // Try to update patient 2's data
+        createdPatient2.setPhone("+8888888888");
+
+        // When & Then - patient 1 should NOT update patient 2's data
+        mockMvc.perform(put("/api/patients/" + createdPatient2.getId())
+                .header("Authorization", testAuthUtils.getAuthorizationHeader(patient1Token))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(createdPatient2)))
+                .andExpect(status().isForbidden());
+    }
 }

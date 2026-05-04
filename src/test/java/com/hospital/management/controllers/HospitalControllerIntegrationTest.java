@@ -231,4 +231,90 @@ class HospitalControllerIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].name").value("City General Hospital"));
     }
+
+    // Phase 10.10: Director hospital-scoped authorization tests (Security Fix)
+    @Test
+    void directorShouldAccessTheirOwnHospital() throws Exception {
+        // Given - create a hospital and director
+        Hospital hospital = testAuthUtils.createTestHospital("Director's Hospital");
+        testAuthUtils.createTestDirector("director@example.com", hospital);
+        String directorToken = testAuthUtils.generateToken("director@example.com", UserRole.DIRECTOR);
+
+        // When & Then - director should access their own hospital
+        mockMvc.perform(get("/api/hospitals/" + hospital.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(directorToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(hospital.getId()))
+                .andExpect(jsonPath("$.name").value("Director's Hospital"));
+    }
+
+    @Test
+    void directorShouldNotAccessOtherHospitals() throws Exception {
+        // Given - create two hospitals and a director for hospital 1
+        Hospital hospital1 = testAuthUtils.createTestHospital("Hospital One");
+        Hospital hospital2 = testAuthUtils.createTestHospital("Hospital Two");
+        testAuthUtils.createTestDirector("director@example.com", hospital1);
+        String directorToken = testAuthUtils.generateToken("director@example.com", UserRole.DIRECTOR);
+
+        // When & Then - director should NOT access hospital 2
+        mockMvc.perform(get("/api/hospitals/" + hospital2.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(directorToken)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void directorShouldAccessDoctorsInTheirHospital() throws Exception {
+        // Given - create a hospital and director
+        Hospital hospital = testAuthUtils.createTestHospital("Director's Hospital");
+        testAuthUtils.createTestDirector("director@example.com", hospital);
+        String directorToken = testAuthUtils.generateToken("director@example.com", UserRole.DIRECTOR);
+
+        // When & Then - director should access doctors in their hospital
+        mockMvc.perform(get("/api/hospitals/" + hospital.getId() + "/doctors")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(directorToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    void directorShouldNotAccessDoctorsInOtherHospitals() throws Exception {
+        // Given - create two hospitals and a director for hospital 1
+        Hospital hospital1 = testAuthUtils.createTestHospital("Hospital One");
+        Hospital hospital2 = testAuthUtils.createTestHospital("Hospital Two");
+        testAuthUtils.createTestDirector("director@example.com", hospital1);
+        String directorToken = testAuthUtils.generateToken("director@example.com", UserRole.DIRECTOR);
+
+        // When & Then - director should NOT access doctors in hospital 2
+        mockMvc.perform(get("/api/hospitals/" + hospital2.getId() + "/doctors")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(directorToken)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void directorShouldAccessPatientsInTheirHospital() throws Exception {
+        // Given - create a hospital and director
+        Hospital hospital = testAuthUtils.createTestHospital("Director's Hospital");
+        testAuthUtils.createTestDirector("director@example.com", hospital);
+        String directorToken = testAuthUtils.generateToken("director@example.com", UserRole.DIRECTOR);
+
+        // When & Then - director should access patients in their hospital
+        mockMvc.perform(get("/api/hospitals/" + hospital.getId() + "/patients")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(directorToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    void directorShouldNotAccessPatientsInOtherHospitals() throws Exception {
+        // Given - create two hospitals and a director for hospital 1
+        Hospital hospital1 = testAuthUtils.createTestHospital("Hospital One");
+        Hospital hospital2 = testAuthUtils.createTestHospital("Hospital Two");
+        testAuthUtils.createTestDirector("director@example.com", hospital1);
+        String directorToken = testAuthUtils.generateToken("director@example.com", UserRole.DIRECTOR);
+
+        // When & Then - director should NOT access patients in hospital 2
+        mockMvc.perform(get("/api/hospitals/" + hospital2.getId() + "/patients")
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(directorToken)))
+                .andExpect(status().isForbidden());
+    }
 }

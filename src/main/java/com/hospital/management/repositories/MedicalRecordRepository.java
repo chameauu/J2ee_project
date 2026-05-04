@@ -30,4 +30,7 @@ public interface MedicalRecordRepository extends JpaRepository<MedicalRecord, Lo
     List<MedicalRecord> findByDoctorIdAndHospitalId(@Param("doctorId") Long doctorId, @Param("hospitalId") Long hospitalId);
 
     Long countByHospitalId(Long hospitalId);
+
+    // Phase 10.11: Doctor-Patient relationship checks
+    boolean existsByDoctorIdAndPatientId(Long doctorId, Long patientId);
 }

@@ -46,7 +46,7 @@ public class TestAuthenticationUtils {
     public Hospital createTestHospital(String name) {
         Hospital hospital = new Hospital();
         hospital.setName(name);
-        hospital.setRegistrationNumber("REG-" + System.currentTimeMillis());
+        hospital.setRegistrationNumber("REG-" + System.currentTimeMillis() + "-" + (int)(Math.random() * 10000));
         hospital.setEmail(name.toLowerCase().replace(" ", "") + "@hospital.com");
         hospital.setPhone("+1234567890");
         hospital.setAddress("123 Test Street");

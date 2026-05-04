@@ -28,14 +28,16 @@ public class DoctorController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
+    @PreAuthorize("hasRole('ADMIN') or " +
+                  "(hasRole('DOCTOR') and @hospitalAuthorizationService.isOwner(#id, authentication))")
     public ResponseEntity<DoctorDTO> getDoctor(@PathVariable Long id) {
         DoctorDTO doctor = doctorService.getDoctorById(id);
         return ResponseEntity.ok(doctor);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
+    @PreAuthorize("hasRole('ADMIN') or " +
+                  "(hasRole('DOCTOR') and @hospitalAuthorizationService.isOwner(#id, authentication))")
     public ResponseEntity<DoctorDTO> updateDoctor(
             @PathVariable Long id,
             @Valid @RequestBody DoctorDTO doctorDTO) {
@@ -51,14 +53,14 @@ public class DoctorController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
     public ResponseEntity<List<DoctorDTO>> getAllDoctors() {
         List<DoctorDTO> doctors = doctorService.getAllDoctors();
         return ResponseEntity.ok(doctors);
     }
 
     @GetMapping("/search")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR')")
     public ResponseEntity<List<DoctorDTO>> searchBySpecialization(
             @RequestParam String specialization) {
         List<DoctorDTO> doctors = doctorService.getDoctorsBySpecialization(specialization);
@@ -67,8 +69,9 @@ public class DoctorController {
 
     // Phase 10.3: Hospital-scoped queries
     // Phase 10.4: Added authorization checks
+    // Phase 10.11: Removed patient access
     @GetMapping("/hospital/{hospitalId}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'DOCTOR', 'PATIENT') and " +
+    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR', 'DOCTOR') and " +
                   "@hospitalAuthorizationService.canAccessHospital(#hospitalId, authentication)")
     public ResponseEntity<List<DoctorDTO>> getDoctorsByHospital(
             @PathVariable Long hospitalId,

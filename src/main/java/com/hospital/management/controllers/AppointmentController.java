@@ -28,7 +28,8 @@ public class AppointmentController {
     }
 
     @GetMapping("/appointments/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PATIENT')")
+    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR') or " +
+                  "(hasRole('PATIENT') and @hospitalAuthorizationService.canAccessAppointment(#id, authentication))")
     public ResponseEntity<AppointmentDTO> getAppointment(@PathVariable Long id) {
         AppointmentDTO appointment = appointmentService.getAppointmentById(id);
         return ResponseEntity.ok(appointment);
@@ -44,7 +45,8 @@ public class AppointmentController {
     }
 
     @DeleteMapping("/appointments/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PATIENT')")
+    @PreAuthorize("hasRole('ADMIN') or " +
+                  "(hasRole('PATIENT') and @hospitalAuthorizationService.canAccessAppointment(#id, authentication))")
     public ResponseEntity<AppointmentDTO> cancelAppointment(@PathVariable Long id) {
         AppointmentDTO cancelled = appointmentService.cancelAppointment(id);
         return ResponseEntity.ok(cancelled);

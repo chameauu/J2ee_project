@@ -67,4 +67,7 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     Long countByHospitalId(Long hospitalId);
 
     Long countByHospitalIdAndStatus(Long hospitalId, AppointmentStatus status);
+
+    // Phase 10.11: Doctor-Patient relationship checks
+    boolean existsByDoctorIdAndPatientId(Long doctorId, Long patientId);
 }

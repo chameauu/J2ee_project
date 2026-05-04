@@ -28,14 +28,17 @@ public class PatientController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DOCTOR', 'PHARMACIST', 'PATIENT')")
+    @PreAuthorize("hasRole('ADMIN') or hasRole('PHARMACIST') or " +
+                  "(hasRole('DOCTOR') and @hospitalAuthorizationService.doctorCanAccessPatient(#id, authentication)) or " +
+                  "(hasRole('PATIENT') and @hospitalAuthorizationService.isOwner(#id, authentication))")
     public ResponseEntity<PatientDTO> getPatient(@PathVariable Long id) {
         PatientDTO patient = patientService.getPatientById(id);
         return ResponseEntity.ok(patient);
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'PATIENT')")
+    @PreAuthorize("hasRole('ADMIN') or " +
+                  "(hasRole('PATIENT') and @hospitalAuthorizationService.isOwner(#id, authentication))")
     public ResponseEntity<PatientDTO> updatePatient(
             @PathVariable Long id,
             @Valid @RequestBody PatientDTO patientDTO) {

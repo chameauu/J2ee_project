@@ -32,7 +32,8 @@ public class HospitalController {
     }
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'DIRECTOR')")
+    @PreAuthorize("hasRole('ADMIN') or " +
+                  "(hasRole('DIRECTOR') and @hospitalAuthorizationService.canAccessHospital(#id, authentication))")
     public ResponseEntity<HospitalDTO> getHospitalById(@PathVariable Long id) {
         HospitalDTO hospital = hospitalService.getHospitalById(id);
         return ResponseEntity.ok(hospital);

@@ -179,6 +179,103 @@ class DoctorControllerIntegrationTest extends BaseIntegrationTest {
                 .andExpect(jsonPath("$[1].specialization").value("Cardiology"));
     }
 
+    // Phase 10.11: Owner-based authorization tests for doctors
+    @Test
+    void doctorShouldAccessTheirOwnProfile() throws Exception {
+        // Create a doctor
+        DoctorDTO doctor = createAndSaveDoctor("Dr. John", "Smith", "john.smith@hospital.com",
+                "+1234567890", "Cardiology", "LIC12345", 10, "MD");
+
+        // Generate token for this doctor
+        String doctorToken = testAuthUtils.generateToken("john.smith@hospital.com", UserRole.DOCTOR);
+
+        // Doctor should be able to access their own profile
+        mockMvc.perform(get("/api/doctors/" + doctor.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(doctorToken)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(doctor.getId()))
+                .andExpect(jsonPath("$.email").value("john.smith@hospital.com"));
+    }
+
+    @Test
+    void doctorShouldNotAccessOtherDoctorsProfile() throws Exception {
+        // Create two doctors
+        DoctorDTO doctor1 = createAndSaveDoctor("Dr. John", "Smith", "john.smith@hospital.com",
+                "+1234567890", "Cardiology", "LIC12345", 10, "MD");
+        DoctorDTO doctor2 = createAndSaveDoctor("Dr. Jane", "Doe", "jane.doe@hospital.com",
+                "+9876543210", "Neurology", "LIC67890", 15, "MD");
+
+        // Generate token for doctor1
+        String doctor1Token = testAuthUtils.generateToken("john.smith@hospital.com", UserRole.DOCTOR);
+
+        // Doctor1 should NOT be able to access doctor2's profile
+        mockMvc.perform(get("/api/doctors/" + doctor2.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(doctor1Token)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access denied: You do not have permission to access this resource"));
+    }
+
+    @Test
+    void doctorShouldUpdateTheirOwnProfile() throws Exception {
+        // Create a doctor
+        DoctorDTO doctor = createAndSaveDoctor("Dr. John", "Smith", "john.smith@hospital.com",
+                "+1234567890", "Cardiology", "LIC12345", 10, "MD");
+
+        // Generate token for this doctor
+        String doctorToken = testAuthUtils.generateToken("john.smith@hospital.com", UserRole.DOCTOR);
+
+        // Update doctor's own profile
+        doctor.setYearsOfExperience(12);
+        doctor.setQualification("MD, FACC");
+
+        mockMvc.perform(put("/api/doctors/" + doctor.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(doctorToken))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(doctor)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.yearsOfExperience").value(12))
+                .andExpect(jsonPath("$.qualification").value("MD, FACC"));
+    }
+
+    @Test
+    void doctorShouldNotUpdateOtherDoctorsProfile() throws Exception {
+        // Create two doctors
+        DoctorDTO doctor1 = createAndSaveDoctor("Dr. John", "Smith", "john.smith@hospital.com",
+                "+1234567890", "Cardiology", "LIC12345", 10, "MD");
+        DoctorDTO doctor2 = createAndSaveDoctor("Dr. Jane", "Doe", "jane.doe@hospital.com",
+                "+9876543210", "Neurology", "LIC67890", 15, "MD");
+
+        // Generate token for doctor1
+        String doctor1Token = testAuthUtils.generateToken("john.smith@hospital.com", UserRole.DOCTOR);
+
+        // Doctor1 should NOT be able to update doctor2's profile
+        doctor2.setYearsOfExperience(20);
+
+        mockMvc.perform(put("/api/doctors/" + doctor2.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(doctor1Token))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(doctor2)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access denied: You do not have permission to access this resource"));
+    }
+
+    @Test
+    void patientShouldNotAccessDoctorProfile() throws Exception {
+        // Create a doctor
+        DoctorDTO doctor = createAndSaveDoctor("Dr. John", "Smith", "john.smith@hospital.com",
+                "+1234567890", "Cardiology", "LIC12345", 10, "MD");
+
+        // Create a patient and generate token
+        testAuthUtils.createTestPatient("patient@email.com", testHospital);
+        String patientToken = testAuthUtils.generateToken("patient@email.com", UserRole.PATIENT);
+
+        // Patient should NOT be able to access doctor's profile
+        mockMvc.perform(get("/api/doctors/" + doctor.getId())
+                        .header("Authorization", testAuthUtils.getAuthorizationHeader(patientToken)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.message").value("Access denied: You do not have permission to access this resource"));
+    }
+
     // Helper methods
     private DoctorDTO createDoctorDTO(String firstName, String lastName, String email,
                                       String phone, String specialization, String licenseNumber,

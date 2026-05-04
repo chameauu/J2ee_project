@@ -1,8 +1,14 @@
 package com.hospital.management.security;
 
+import com.hospital.management.entities.Appointment;
 import com.hospital.management.entities.HospitalDirector;
+import com.hospital.management.entities.MedicalRecord;
+import com.hospital.management.entities.Prescription;
 import com.hospital.management.entities.User;
+import com.hospital.management.repositories.AppointmentRepository;
 import com.hospital.management.repositories.HospitalDirectorRepository;
+import com.hospital.management.repositories.MedicalRecordRepository;
+import com.hospital.management.repositories.PrescriptionRepository;
 import com.hospital.management.repositories.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +31,9 @@ public class HospitalAuthorizationService {
 
     private final UserRepository userRepository;
     private final HospitalDirectorRepository hospitalDirectorRepository;
+    private final AppointmentRepository appointmentRepository;
+    private final PrescriptionRepository prescriptionRepository;
+    private final MedicalRecordRepository medicalRecordRepository;
 
     /**
      * Check if the authenticated user is a director of the specified hospital.
@@ -326,6 +335,165 @@ public class HospitalAuthorizationService {
 
         } catch (Exception e) {
             log.error("Error checking ownership: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check if authenticated user can access a specific appointment.
+     * Patients can only access their own appointments.
+     * 
+     * @param appointmentId The appointment ID to check
+     * @param authentication The Spring Security authentication object
+     * @return true if user can access the appointment, false otherwise
+     */
+    @Transactional(readOnly = true)
+    public boolean canAccessAppointment(Long appointmentId, Authentication authentication) {
+        if (appointmentId == null || authentication == null) {
+            return false;
+        }
+
+        String userEmail = authentication.getName();
+
+        try {
+            Optional<User> userOpt = userRepository.findByEmail(userEmail);
+            if (userOpt.isEmpty()) {
+                log.warn("User not found with email: {}", userEmail);
+                return false;
+            }
+
+            User user = userOpt.get();
+
+            // Get the appointment
+            Optional<Appointment> appointmentOpt = appointmentRepository.findById(appointmentId);
+            if (appointmentOpt.isEmpty()) {
+                log.warn("Appointment not found with id: {}", appointmentId);
+                return false;
+            }
+
+            Appointment appointment = appointmentOpt.get();
+
+            // Check if the appointment belongs to this patient
+            if (appointment.getPatient() != null && 
+                appointment.getPatient().getId().equals(user.getId())) {
+                return true;
+            }
+
+            log.warn("User {} attempted to access appointment {} without permission", userEmail, appointmentId);
+            return false;
+
+        } catch (Exception e) {
+            log.error("Error checking appointment access: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check if authenticated user can access a specific prescription.
+     * Patients can only access their own prescriptions.
+     * 
+     * @param prescriptionId The prescription ID to check
+     * @param authentication The Spring Security authentication object
+     * @return true if user can access the prescription, false otherwise
+     */
+    @Transactional(readOnly = true)
+    public boolean canAccessPrescription(Long prescriptionId, Authentication authentication) {
+        if (prescriptionId == null || authentication == null) {
+            return false;
+        }
+
+        String userEmail = authentication.getName();
+
+        try {
+            Optional<User> userOpt = userRepository.findByEmail(userEmail);
+            if (userOpt.isEmpty()) {
+                log.warn("User not found with email: {}", userEmail);
+                return false;
+            }
+
+            User user = userOpt.get();
+
+            // Get the prescription
+            Optional<Prescription> prescriptionOpt = prescriptionRepository.findById(prescriptionId);
+            if (prescriptionOpt.isEmpty()) {
+                log.warn("Prescription not found with id: {}", prescriptionId);
+                return false;
+            }
+
+            Prescription prescription = prescriptionOpt.get();
+
+            // Check if the prescription belongs to this patient
+            if (prescription.getPatient() != null && 
+                prescription.getPatient().getId().equals(user.getId())) {
+                return true;
+            }
+
+            log.warn("User {} attempted to access prescription {} without permission", userEmail, prescriptionId);
+            return false;
+
+        } catch (Exception e) {
+            log.error("Error checking prescription access: {}", e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check if a doctor can access a patient's data.
+     * Doctors can access patients if they have medical records or appointments with them.
+     * 
+     * Phase 10.11: Doctor-Patient relationship authorization
+     * 
+     * @param patientId The patient ID to check
+     * @param authentication The Spring Security authentication object
+     * @return true if doctor can access the patient, false otherwise
+     */
+    @Transactional(readOnly = true)
+    public boolean doctorCanAccessPatient(Long patientId, Authentication authentication) {
+        if (patientId == null || authentication == null) {
+            return false;
+        }
+
+        String userEmail = authentication.getName();
+
+        try {
+            Optional<User> userOpt = userRepository.findByEmail(userEmail);
+            if (userOpt.isEmpty()) {
+                log.warn("User not found with email: {}", userEmail);
+                return false;
+            }
+
+            User user = userOpt.get();
+
+            // Check if doctor has any medical records with this patient
+            boolean hasMedicalRecords = medicalRecordRepository.existsByDoctorIdAndPatientId(user.getId(), patientId);
+            if (hasMedicalRecords) {
+                log.debug("Doctor {} has medical records with patient {}", userEmail, patientId);
+                return true;
+            }
+
+            // Check if doctor has any appointments with this patient
+            boolean hasAppointments = appointmentRepository.existsByDoctorIdAndPatientId(user.getId(), patientId);
+            if (hasAppointments) {
+                log.debug("Doctor {} has appointments with patient {}", userEmail, patientId);
+                return true;
+            }
+
+            // Check if they're in the same hospital (doctors can see patients in their hospital)
+            Optional<User> patientOpt = userRepository.findById(patientId);
+            if (patientOpt.isPresent()) {
+                User patient = patientOpt.get();
+                if (user.getHospital() != null && patient.getHospital() != null &&
+                    user.getHospital().getId().equals(patient.getHospital().getId())) {
+                    log.debug("Doctor {} and patient {} are in the same hospital", userEmail, patientId);
+                    return true;
+                }
+            }
+
+            log.warn("Doctor {} attempted to access patient {} without relationship", userEmail, patientId);
+            return false;
+
+        } catch (Exception e) {
+            log.error("Error checking doctor-patient access: {}", e.getMessage());
             return false;
         }
     }

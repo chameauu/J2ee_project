@@ -3,7 +3,9 @@ package com.hospital.management.services;
 import com.hospital.management.dto.LoginRequest;
 import com.hospital.management.dto.LoginResponse;
 import com.hospital.management.exceptions.UnauthorizedException;
+import com.hospital.management.repositories.AdministratorRepository;
 import com.hospital.management.repositories.DoctorRepository;
+import com.hospital.management.repositories.HospitalDirectorRepository;
 import com.hospital.management.repositories.PatientRepository;
 import com.hospital.management.repositories.PharmacistRepository;
 import com.hospital.management.security.JwtTokenProvider;
@@ -19,6 +21,8 @@ public class AuthServiceImpl implements IAuthService {
     private final PatientRepository patientRepository;
     private final DoctorRepository doctorRepository;
     private final PharmacistRepository pharmacistRepository;
+    private final AdministratorRepository administratorRepository;
+    private final HospitalDirectorRepository hospitalDirectorRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
@@ -30,11 +34,17 @@ public class AuthServiceImpl implements IAuthService {
         // In production, this should use BCrypt password hashing
         
         // Check if user exists in any repository
-        if (patientRepository.existsByEmail(email)) {
-            // Simple demo password: "patient123"
-            if ("patient123".equals(password)) {
-                String token = jwtTokenProvider.generateToken(email, "PATIENT");
-                return new LoginResponse(token, email, "PATIENT");
+        if (administratorRepository.existsByEmail(email)) {
+            // Simple demo password: "admin123"
+            if ("admin123".equals(password)) {
+                String token = jwtTokenProvider.generateToken(email, "ADMIN");
+                return new LoginResponse(token, email, "ADMIN");
+            }
+        } else if (hospitalDirectorRepository.existsByEmail(email)) {
+            // Simple demo password: "director123"
+            if ("director123".equals(password)) {
+                String token = jwtTokenProvider.generateToken(email, "DIRECTOR");
+                return new LoginResponse(token, email, "DIRECTOR");
             }
         } else if (doctorRepository.existsByEmail(email)) {
             // Simple demo password: "doctor123"
@@ -47,6 +57,12 @@ public class AuthServiceImpl implements IAuthService {
             if ("pharmacist123".equals(password)) {
                 String token = jwtTokenProvider.generateToken(email, "PHARMACIST");
                 return new LoginResponse(token, email, "PHARMACIST");
+            }
+        } else if (patientRepository.existsByEmail(email)) {
+            // Simple demo password: "patient123"
+            if ("patient123".equals(password)) {
+                String token = jwtTokenProvider.generateToken(email, "PATIENT");
+                return new LoginResponse(token, email, "PATIENT");
             }
         }
 
