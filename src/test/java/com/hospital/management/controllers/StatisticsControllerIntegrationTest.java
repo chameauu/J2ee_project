@@ -53,11 +53,25 @@ class StatisticsControllerIntegrationTest {
     @Autowired
     private MedicalRecordRepository medicalRecordRepository;
 
+    @Autowired
+    private HospitalRepository hospitalRepository; // Phase 10.6
+
+    private Hospital hospital; // Phase 10.6
     private Doctor doctor;
     private Patient patient;
 
     @BeforeEach
     void setUp() {
+        // Phase 10.6: Create hospital first
+        hospital = new Hospital();
+        hospital.setName("Test Hospital");
+        hospital.setAddress("123 Test St");
+        hospital.setPhone("555-0001");
+        hospital.setEmail("test@hospital.com");
+        hospital.setRegistrationNumber("REG-TEST-001");
+        hospital.setEstablishedDate(LocalDate.of(2000, 1, 1));
+        hospital = hospitalRepository.save(hospital);
+
         // Create test data
         doctor = new Doctor();
         doctor.setFirstName("John");
@@ -68,6 +82,7 @@ class StatisticsControllerIntegrationTest {
         doctor.setLicenseNumber("LIC001");
         doctor.setYearsOfExperience(10);
         doctor.setQualification("MD");
+        doctor.setHospital(hospital); // Phase 10.6
         doctor = doctorRepository.save(doctor);
 
         patient = new Patient();
@@ -79,6 +94,7 @@ class StatisticsControllerIntegrationTest {
         patient.setGender(Gender.FEMALE);
         patient.setBloodType("O+");
         patient.setAddress("123 Main St");
+        patient.setHospital(hospital); // Phase 10.6
         patient = patientRepository.save(patient);
 
         Pharmacist pharmacist = new Pharmacist();
@@ -88,12 +104,14 @@ class StatisticsControllerIntegrationTest {
         pharmacist.setPhone("1112223333");
         pharmacist.setLicenseNumber("PLIC001");
         pharmacist.setQualification("PharmD");
+        pharmacist.setHospital(hospital); // Phase 10.6
         pharmacistRepository.save(pharmacist);
 
         // Create appointment for today
         Appointment appointment = new Appointment();
         appointment.setPatient(patient);
         appointment.setDoctor(doctor);
+        appointment.setHospital(hospital); // Phase 10.6
         appointment.setAppointmentDateTime(LocalDateTime.now().plusHours(2));
         appointment.setDurationMinutes(30);
         appointment.setStatus(AppointmentStatus.SCHEDULED);
@@ -105,6 +123,7 @@ class StatisticsControllerIntegrationTest {
         Appointment completedAppointment = new Appointment();
         completedAppointment.setPatient(patient);
         completedAppointment.setDoctor(doctor);
+        completedAppointment.setHospital(hospital); // Phase 10.6
         completedAppointment.setAppointmentDateTime(LocalDateTime.now().minusDays(1));
         completedAppointment.setDurationMinutes(30);
         completedAppointment.setStatus(AppointmentStatus.COMPLETED);
@@ -116,6 +135,7 @@ class StatisticsControllerIntegrationTest {
         MedicalRecord medicalRecord = new MedicalRecord();
         medicalRecord.setPatient(patient);
         medicalRecord.setDoctor(doctor);
+        medicalRecord.setHospital(hospital); // Phase 10.6
         medicalRecord.setVisitDate(LocalDateTime.now());
         medicalRecord.setChiefComplaint("Chest pain");
         medicalRecord.setDiagnosis("Angina");
@@ -127,6 +147,7 @@ class StatisticsControllerIntegrationTest {
         prescription.setPatient(patient);
         prescription.setDoctor(doctor);
         prescription.setMedicalRecord(medicalRecord);
+        prescription.setHospital(hospital); // Phase 10.6
         prescription.setPrescribedDate(LocalDateTime.now());
         prescription.setValidUntil(LocalDate.now().plusDays(30));
         prescription.setStatus(PrescriptionStatus.ACTIVE);

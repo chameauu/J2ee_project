@@ -23,6 +23,11 @@ public class PharmacyStockDTO {
 
     private String medicationName;
 
+    @NotNull(message = "Hospital ID is required")
+    private Long hospitalId;
+
+    private String hospitalName;
+
     @NotNull(message = "Quantity is required")
     @Min(value = 0, message = "Quantity must be non-negative")
     private Integer quantity;

@@ -53,11 +53,25 @@ class DirectorDashboardControllerIntegrationTest {
     @Autowired
     private MedicalRecordRepository medicalRecordRepository;
 
+    @Autowired
+    private HospitalRepository hospitalRepository; // Phase 10.6
+
+    private Hospital hospital; // Phase 10.6
     private Doctor doctor;
     private Patient patient;
 
     @BeforeEach
     void setUp() {
+        // Phase 10.6: Create hospital first
+        hospital = new Hospital();
+        hospital.setName("Test Hospital");
+        hospital.setAddress("123 Test St");
+        hospital.setPhone("555-0001");
+        hospital.setEmail("test@hospital.com");
+        hospital.setRegistrationNumber("REG-TEST-001");
+        hospital.setEstablishedDate(LocalDate.of(2000, 1, 1));
+        hospital = hospitalRepository.save(hospital);
+
         // Create test data
         doctor = new Doctor();
         doctor.setFirstName("John");
@@ -68,6 +82,7 @@ class DirectorDashboardControllerIntegrationTest {
         doctor.setLicenseNumber("LIC001");
         doctor.setYearsOfExperience(10);
         doctor.setQualification("MD");
+        doctor.setHospital(hospital); // Phase 10.6
         doctor = doctorRepository.save(doctor);
 
         patient = new Patient();
@@ -79,6 +94,7 @@ class DirectorDashboardControllerIntegrationTest {
         patient.setGender(Gender.FEMALE);
         patient.setBloodType("O+");
         patient.setAddress("123 Main St");
+        patient.setHospital(hospital); // Phase 10.6
         patient = patientRepository.save(patient);
 
         Pharmacist pharmacist = new Pharmacist();
@@ -88,12 +104,14 @@ class DirectorDashboardControllerIntegrationTest {
         pharmacist.setPhone("1112223333");
         pharmacist.setLicenseNumber("PLIC001");
         pharmacist.setQualification("PharmD");
+        pharmacist.setHospital(hospital); // Phase 10.6
         pharmacistRepository.save(pharmacist);
 
         // Create appointments
         Appointment appointment1 = new Appointment();
         appointment1.setPatient(patient);
         appointment1.setDoctor(doctor);
+        appointment1.setHospital(hospital); // Phase 10.6
         appointment1.setAppointmentDateTime(LocalDateTime.now().plusHours(2));
         appointment1.setDurationMinutes(30);
         appointment1.setStatus(AppointmentStatus.SCHEDULED);
@@ -104,6 +122,7 @@ class DirectorDashboardControllerIntegrationTest {
         Appointment appointment2 = new Appointment();
         appointment2.setPatient(patient);
         appointment2.setDoctor(doctor);
+        appointment2.setHospital(hospital); // Phase 10.6
         appointment2.setAppointmentDateTime(LocalDateTime.now().minusDays(1));
         appointment2.setDurationMinutes(30);
         appointment2.setStatus(AppointmentStatus.COMPLETED);
@@ -115,6 +134,7 @@ class DirectorDashboardControllerIntegrationTest {
         MedicalRecord medicalRecord = new MedicalRecord();
         medicalRecord.setPatient(patient);
         medicalRecord.setDoctor(doctor);
+        medicalRecord.setHospital(hospital); // Phase 10.6
         medicalRecord.setVisitDate(LocalDateTime.now());
         medicalRecord.setChiefComplaint("Chest pain");
         medicalRecord.setDiagnosis("Angina");
@@ -126,6 +146,7 @@ class DirectorDashboardControllerIntegrationTest {
         prescription.setPatient(patient);
         prescription.setDoctor(doctor);
         prescription.setMedicalRecord(medicalRecord);
+        prescription.setHospital(hospital); // Phase 10.6
         prescription.setPrescribedDate(LocalDateTime.now());
         prescription.setValidUntil(LocalDate.now().plusDays(30));
         prescription.setStatus(PrescriptionStatus.ACTIVE);

@@ -57,6 +57,7 @@ public class AppointmentServiceImpl implements IAppointmentService {
         Appointment appointment = appointmentMapper.toEntity(dto);
         appointment.setPatient(patient);
         appointment.setDoctor(doctor);
+        appointment.setHospital(doctor.getHospital()); // Phase 10.6: Set hospital from doctor
 
         // Save
         Appointment saved = appointmentRepository.save(appointment);

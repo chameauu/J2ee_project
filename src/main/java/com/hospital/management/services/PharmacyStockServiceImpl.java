@@ -1,10 +1,12 @@
 package com.hospital.management.services;
 
 import com.hospital.management.dto.PharmacyStockDTO;
+import com.hospital.management.entities.Hospital;
 import com.hospital.management.entities.Medication;
 import com.hospital.management.entities.PharmacyStock;
 import com.hospital.management.exceptions.ResourceNotFoundException;
 import com.hospital.management.mappers.PharmacyStockMapper;
+import com.hospital.management.repositories.HospitalRepository;
 import com.hospital.management.repositories.MedicationRepository;
 import com.hospital.management.repositories.PharmacyStockRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ public class PharmacyStockServiceImpl implements IPharmacyStockService {
 
     private final PharmacyStockRepository pharmacyStockRepository;
     private final MedicationRepository medicationRepository;
+    private final HospitalRepository hospitalRepository;
     private final PharmacyStockMapper pharmacyStockMapper;
 
     @Override
@@ -29,8 +32,12 @@ public class PharmacyStockServiceImpl implements IPharmacyStockService {
         Medication medication = medicationRepository.findById(dto.getMedicationId())
                 .orElseThrow(() -> new ResourceNotFoundException("Medication not found with id: " + dto.getMedicationId()));
 
+        Hospital hospital = hospitalRepository.findById(dto.getHospitalId())
+                .orElseThrow(() -> new ResourceNotFoundException("Hospital not found with id: " + dto.getHospitalId()));
+
         PharmacyStock stock = pharmacyStockMapper.toEntity(dto);
         stock.setMedication(medication);
+        stock.setHospital(hospital); // Phase 10.6: Set hospital (required)
 
         PharmacyStock saved = pharmacyStockRepository.save(stock);
         return pharmacyStockMapper.toDTO(saved);
@@ -62,6 +69,12 @@ public class PharmacyStockServiceImpl implements IPharmacyStockService {
             Medication medication = medicationRepository.findById(dto.getMedicationId())
                     .orElseThrow(() -> new ResourceNotFoundException("Medication not found with id: " + dto.getMedicationId()));
             existing.setMedication(medication);
+        }
+
+        if (dto.getHospitalId() != null && !dto.getHospitalId().equals(existing.getHospital().getId())) {
+            Hospital hospital = hospitalRepository.findById(dto.getHospitalId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Hospital not found with id: " + dto.getHospitalId()));
+            existing.setHospital(hospital);
         }
 
         existing.setQuantity(dto.getQuantity());

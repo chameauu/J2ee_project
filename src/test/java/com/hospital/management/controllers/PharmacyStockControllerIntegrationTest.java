@@ -2,6 +2,7 @@ package com.hospital.management.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hospital.management.config.TestSecurityConfig;
+import com.hospital.management.dto.HospitalDTO;
 import com.hospital.management.dto.MedicationDTO;
 import com.hospital.management.dto.PharmacyStockDTO;
 import com.hospital.management.enums.MedicationType;
@@ -42,9 +43,13 @@ class PharmacyStockControllerIntegrationTest {
 
     private MedicationDTO medicationDTO;
     private PharmacyStockDTO pharmacyStockDTO;
+    private Long hospitalId;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
+        // Phase 10.6: Create hospital first
+        hospitalId = createHospital();
+        
         medicationDTO = new MedicationDTO();
         medicationDTO.setName("Aspirin");
         medicationDTO.setGenericName("Acetylsalicylic Acid");
@@ -52,6 +57,25 @@ class PharmacyStockControllerIntegrationTest {
         medicationDTO.setType(MedicationType.TABLET);
         medicationDTO.setStrength("500mg");
         medicationDTO.setDescription("Pain reliever");
+    }
+
+    private Long createHospital() throws Exception {
+        HospitalDTO hospitalDTO = new HospitalDTO();
+        hospitalDTO.setName("Test Hospital");
+        hospitalDTO.setAddress("123 Test St");
+        hospitalDTO.setPhone("555-0001");
+        hospitalDTO.setEmail("test@hospital.com");
+        hospitalDTO.setRegistrationNumber("REG-TEST-001");
+        hospitalDTO.setEstablishedDate(LocalDate.of(2000, 1, 1));
+
+        String response = mockMvc.perform(post("/api/hospitals")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(hospitalDTO)))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+
+        HospitalDTO created = objectMapper.readValue(response, HospitalDTO.class);
+        return created.getId();
     }
 
     private Long createMedication() throws Exception {
@@ -71,6 +95,8 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
+        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
+        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -104,6 +130,7 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
+        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -136,6 +163,7 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
+        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -164,6 +192,7 @@ class PharmacyStockControllerIntegrationTest {
     void shouldReturn404WhenUpdatingNonExistentStock() throws Exception {
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(1L);
+        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -182,6 +211,7 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
+        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -215,6 +245,7 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
+        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -237,6 +268,7 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
+        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -262,6 +294,7 @@ class PharmacyStockControllerIntegrationTest {
 
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setMedicationId(medicationId);
+        pharmacyStockDTO.setHospitalId(hospitalId); // Phase 10.6
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));

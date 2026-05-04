@@ -38,6 +38,10 @@ public class Prescription {
     @JoinColumn(name = "medical_record_id")
     private MedicalRecord medicalRecord;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hospital_id", nullable = false)
+    private Hospital hospital;
+
     @Column(nullable = false)
     private LocalDateTime prescribedDate;
 

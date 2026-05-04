@@ -41,6 +41,7 @@ public class MedicalRecordServiceImpl implements IMedicalRecordService {
         MedicalRecord medicalRecord = medicalRecordMapper.toEntity(dto);
         medicalRecord.setPatient(patient);
         medicalRecord.setDoctor(doctor);
+        medicalRecord.setHospital(doctor.getHospital()); // Phase 10.6: Set hospital from doctor
         medicalRecord.setVisitDate(LocalDateTime.now());
 
         // Save
@@ -75,6 +76,7 @@ public class MedicalRecordServiceImpl implements IMedicalRecordService {
         // Update fields
         medicalRecord.setPatient(patient);
         medicalRecord.setDoctor(doctor);
+        medicalRecord.setHospital(doctor.getHospital()); // Phase 10.6: Update hospital from doctor
         medicalRecord.setChiefComplaint(dto.getChiefComplaint());
         medicalRecord.setDiagnosis(dto.getDiagnosis());
         medicalRecord.setTreatment(dto.getTreatment());

@@ -1,11 +1,13 @@
 package com.hospital.management.services;
 
 import com.hospital.management.dto.PharmacyStockDTO;
+import com.hospital.management.entities.Hospital;
 import com.hospital.management.entities.Medication;
 import com.hospital.management.entities.PharmacyStock;
 import com.hospital.management.enums.MedicationType;
 import com.hospital.management.exceptions.ResourceNotFoundException;
 import com.hospital.management.mappers.PharmacyStockMapper;
+import com.hospital.management.repositories.HospitalRepository;
 import com.hospital.management.repositories.MedicationRepository;
 import com.hospital.management.repositories.PharmacyStockRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,17 +36,25 @@ class PharmacyStockServiceImplTest {
     private MedicationRepository medicationRepository;
 
     @Mock
+    private HospitalRepository hospitalRepository; // Phase 10.6
+
+    @Mock
     private PharmacyStockMapper pharmacyStockMapper;
 
     @InjectMocks
     private PharmacyStockServiceImpl pharmacyStockService;
 
+    private Hospital hospital;
     private Medication medication;
     private PharmacyStock pharmacyStock;
     private PharmacyStockDTO pharmacyStockDTO;
 
     @BeforeEach
     void setUp() {
+        hospital = new Hospital();
+        hospital.setId(1L);
+        hospital.setName("Test Hospital");
+        
         medication = new Medication();
         medication.setId(1L);
         medication.setName("Aspirin");
@@ -53,6 +63,7 @@ class PharmacyStockServiceImplTest {
         pharmacyStock = new PharmacyStock();
         pharmacyStock.setId(1L);
         pharmacyStock.setMedication(medication);
+        pharmacyStock.setHospital(hospital); // Phase 10.6
         pharmacyStock.setQuantity(100);
         pharmacyStock.setReorderLevel(20);
         pharmacyStock.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -62,6 +73,7 @@ class PharmacyStockServiceImplTest {
         pharmacyStockDTO = new PharmacyStockDTO();
         pharmacyStockDTO.setId(1L);
         pharmacyStockDTO.setMedicationId(1L);
+        pharmacyStockDTO.setHospitalId(1L); // Phase 10.6
         pharmacyStockDTO.setQuantity(100);
         pharmacyStockDTO.setReorderLevel(20);
         pharmacyStockDTO.setExpiryDate(LocalDate.now().plusMonths(6));
@@ -72,6 +84,7 @@ class PharmacyStockServiceImplTest {
     @Test
     void shouldCreateStock() {
         when(medicationRepository.findById(1L)).thenReturn(Optional.of(medication));
+        when(hospitalRepository.findById(1L)).thenReturn(Optional.of(hospital)); // Phase 10.6
         when(pharmacyStockMapper.toEntity(any(PharmacyStockDTO.class))).thenReturn(pharmacyStock);
         when(pharmacyStockRepository.save(any(PharmacyStock.class))).thenReturn(pharmacyStock);
         when(pharmacyStockMapper.toDTO(any(PharmacyStock.class))).thenReturn(pharmacyStockDTO);

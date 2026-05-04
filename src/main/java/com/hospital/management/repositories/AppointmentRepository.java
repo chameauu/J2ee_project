@@ -57,4 +57,14 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     @Query("SELECT COUNT(DISTINCT a.doctor.id) FROM Appointment a WHERE a.appointmentDateTime BETWEEN :startTime AND :endTime")
     Long countDistinctDoctorsByAppointmentDateTimeBetween(@Param("startTime") LocalDateTime startTime, @Param("endTime") LocalDateTime endTime);
+
+    // Phase 10.6: Hospital-scoped queries
+    List<Appointment> findByHospitalIdOrderByAppointmentDateTimeDesc(Long hospitalId);
+
+    @Query("SELECT a FROM Appointment a WHERE a.doctor.id = :doctorId AND a.hospital.id = :hospitalId ORDER BY a.appointmentDateTime ASC")
+    List<Appointment> findByDoctorIdAndHospitalId(@Param("doctorId") Long doctorId, @Param("hospitalId") Long hospitalId);
+
+    Long countByHospitalId(Long hospitalId);
+
+    Long countByHospitalIdAndStatus(Long hospitalId, AppointmentStatus status);
 }

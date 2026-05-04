@@ -26,6 +26,10 @@ public class PharmacyStock {
     @JoinColumn(name = "medication_id", nullable = false)
     private Medication medication;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "hospital_id", nullable = false)
+    private Hospital hospital;
+
     @Column(nullable = false)
     private Integer quantity;
 

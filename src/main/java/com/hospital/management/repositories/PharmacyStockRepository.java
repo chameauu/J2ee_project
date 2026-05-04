@@ -22,4 +22,15 @@ public interface PharmacyStockRepository extends JpaRepository<PharmacyStock, Lo
     
     @Query("SELECT ps FROM PharmacyStock ps WHERE ps.expiryDate < :date")
     List<PharmacyStock> findExpiredStock(@Param("date") LocalDate date);
+
+    // Phase 10.6: Hospital-scoped queries
+    List<PharmacyStock> findByHospitalId(Long hospitalId);
+
+    @Query("SELECT ps FROM PharmacyStock ps WHERE ps.hospital.id = :hospitalId AND ps.quantity <= ps.reorderLevel")
+    List<PharmacyStock> findLowStockByHospitalId(@Param("hospitalId") Long hospitalId);
+
+    @Query("SELECT ps FROM PharmacyStock ps WHERE ps.hospital.id = :hospitalId AND ps.expiryDate <= :date")
+    List<PharmacyStock> findExpiringByHospitalId(@Param("hospitalId") Long hospitalId, @Param("date") LocalDate date);
+
+    Long countByHospitalId(Long hospitalId);
 }

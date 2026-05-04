@@ -2,11 +2,14 @@ package com.hospital.management.controllers;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.hospital.management.config.TestSecurityConfig;
+import com.hospital.management.dto.HospitalDTO;
 import com.hospital.management.dto.MedicalRecordDTO;
 import com.hospital.management.entities.Doctor;
+import com.hospital.management.entities.Hospital;
 import com.hospital.management.entities.Patient;
 import com.hospital.management.enums.Gender;
 import com.hospital.management.repositories.DoctorRepository;
+import com.hospital.management.repositories.HospitalRepository;
 import com.hospital.management.repositories.MedicalRecordRepository;
 import com.hospital.management.repositories.PatientRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +25,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -50,6 +52,10 @@ class MedicalRecordControllerIntegrationTest {
     @Autowired
     private DoctorRepository doctorRepository;
 
+    @Autowired
+    private HospitalRepository hospitalRepository; // Phase 10.6
+
+    private Hospital testHospital; // Phase 10.6
     private Patient testPatient;
     private Doctor testDoctor;
 
@@ -58,6 +64,17 @@ class MedicalRecordControllerIntegrationTest {
         medicalRecordRepository.deleteAll();
         patientRepository.deleteAll();
         doctorRepository.deleteAll();
+        hospitalRepository.deleteAll();
+
+        // Phase 10.6: Create test hospital first
+        testHospital = new Hospital();
+        testHospital.setName("Test Hospital");
+        testHospital.setAddress("123 Test St");
+        testHospital.setPhone("555-0001");
+        testHospital.setEmail("test@hospital.com");
+        testHospital.setRegistrationNumber("REG-TEST-001");
+        testHospital.setEstablishedDate(LocalDate.of(2000, 1, 1));
+        testHospital = hospitalRepository.save(testHospital);
 
         // Create test patient
         testPatient = new Patient();
@@ -67,6 +84,7 @@ class MedicalRecordControllerIntegrationTest {
         testPatient.setPhone("1234567890");
         testPatient.setDateOfBirth(LocalDate.of(1990, 1, 1));
         testPatient.setGender(Gender.MALE);
+        testPatient.setHospital(testHospital); // Phase 10.6
         testPatient = patientRepository.save(testPatient);
 
         // Create test doctor
@@ -78,6 +96,7 @@ class MedicalRecordControllerIntegrationTest {
         testDoctor.setSpecialization("Cardiology");
         testDoctor.setLicenseNumber("DOC123");
         testDoctor.setYearsOfExperience(10);
+        testDoctor.setHospital(testHospital); // Phase 10.6
         testDoctor = doctorRepository.save(testDoctor);
     }
 

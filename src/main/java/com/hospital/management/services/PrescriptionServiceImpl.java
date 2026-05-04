@@ -52,6 +52,7 @@ public class PrescriptionServiceImpl implements IPrescriptionService {
         prescription.setPatient(patient);
         prescription.setDoctor(doctor);
         prescription.setMedicalRecord(medicalRecord);
+        prescription.setHospital(doctor.getHospital()); // Phase 10.6: Set hospital from doctor
 
         // Save
         Prescription saved = prescriptionRepository.save(prescription);

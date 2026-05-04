@@ -10,11 +10,14 @@ public interface PharmacyStockMapper {
     
     @Mapping(source = "medication.id", target = "medicationId")
     @Mapping(source = "medication.name", target = "medicationName")
+    @Mapping(source = "hospital.id", target = "hospitalId")
+    @Mapping(source = "hospital.name", target = "hospitalName")
     @Mapping(target = "lowStock", expression = "java(pharmacyStock.isLowStock())")
     @Mapping(target = "expiringSoon", expression = "java(pharmacyStock.isExpiringSoon())")
     PharmacyStockDTO toDTO(PharmacyStock pharmacyStock);
     
     @Mapping(target = "medication", ignore = true)
+    @Mapping(target = "hospital", ignore = true)
     @Mapping(target = "lowStock", ignore = true)
     @Mapping(target = "expiringSoon", ignore = true)
     PharmacyStock toEntity(PharmacyStockDTO dto);
