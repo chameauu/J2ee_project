@@ -37,32 +37,47 @@ public class AuthServiceImpl implements IAuthService {
         if (administratorRepository.existsByEmail(email)) {
             // Simple demo password: "admin123"
             if ("admin123".equals(password)) {
+                Long userId = administratorRepository.findByEmail(email)
+                    .orElseThrow(() -> new UnauthorizedException("User not found"))
+                    .getId();
                 String token = jwtTokenProvider.generateToken(email, "ADMIN");
-                return new LoginResponse(token, email, "ADMIN");
+                return new LoginResponse(token, userId, email, "ADMIN");
             }
         } else if (hospitalDirectorRepository.existsByEmail(email)) {
             // Simple demo password: "director123"
             if ("director123".equals(password)) {
+                Long userId = hospitalDirectorRepository.findByEmail(email)
+                    .orElseThrow(() -> new UnauthorizedException("User not found"))
+                    .getId();
                 String token = jwtTokenProvider.generateToken(email, "DIRECTOR");
-                return new LoginResponse(token, email, "DIRECTOR");
+                return new LoginResponse(token, userId, email, "DIRECTOR");
             }
         } else if (doctorRepository.existsByEmail(email)) {
             // Simple demo password: "doctor123"
             if ("doctor123".equals(password)) {
+                Long userId = doctorRepository.findByEmail(email)
+                    .orElseThrow(() -> new UnauthorizedException("User not found"))
+                    .getId();
                 String token = jwtTokenProvider.generateToken(email, "DOCTOR");
-                return new LoginResponse(token, email, "DOCTOR");
+                return new LoginResponse(token, userId, email, "DOCTOR");
             }
         } else if (pharmacistRepository.existsByEmail(email)) {
             // Simple demo password: "pharmacist123"
             if ("pharmacist123".equals(password)) {
+                Long userId = pharmacistRepository.findByEmail(email)
+                    .orElseThrow(() -> new UnauthorizedException("User not found"))
+                    .getId();
                 String token = jwtTokenProvider.generateToken(email, "PHARMACIST");
-                return new LoginResponse(token, email, "PHARMACIST");
+                return new LoginResponse(token, userId, email, "PHARMACIST");
             }
         } else if (patientRepository.existsByEmail(email)) {
             // Simple demo password: "patient123"
             if ("patient123".equals(password)) {
+                Long userId = patientRepository.findByEmail(email)
+                    .orElseThrow(() -> new UnauthorizedException("User not found"))
+                    .getId();
                 String token = jwtTokenProvider.generateToken(email, "PATIENT");
-                return new LoginResponse(token, email, "PATIENT");
+                return new LoginResponse(token, userId, email, "PATIENT");
             }
         }
 

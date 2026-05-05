@@ -94,7 +94,7 @@ e2e/**/*.map
 storybook-static/
 
 docs/
-
+deepdive
 # Playwright
 test-results/
 playwright-report/
