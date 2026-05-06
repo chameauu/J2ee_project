@@ -1,0 +1,559 @@
+@import 'bootstrap/scss/functions';
+@import 'bootstrap/scss/variables';
+
+// Custom variables
+$primary: #29B6F6;
+$primary-dark: #0288D1;
+$primary-light: #E1F5FE;
+$success: #26A69A;
+$warning: #FFA726;
+$danger: #EF5350;
+$bg: #F0F7FF;
+$surface: #FFFFFF;
+$sidebar-bg: #0D2B45;
+$sidebar-text: #B0C4D8;
+$sidebar-active: #29B6F6;
+$text: #1A2E44;
+$text-muted: #6B8BA4;
+$border: #D6EAF8;
+$shadow: 0 4px 20px rgba(41, 182, 246, 0.12);
+$radius: 14px;
+
+// Layout
+:host {
+  display: flex;
+  min-height: 100vh;
+  background: $bg;
+}
+
+// SIDEBAR
+.sidebar {
+  width: 240px;
+  min-height: 100vh;
+  background: $sidebar-bg;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 100;
+}
+
+.sidebar-logo {
+  padding: 28px 24px 20px;
+  border-bottom: 1px solid #1a3a5c;
+}
+
+.logo-icon {
+  width: 36px;
+  height: 36px;
+  background: $primary;
+  border-radius: 10px;
+  font-size: 20px;
+}
+
+.logo-text {
+  color: #fff;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.logo-sub {
+  color: $sidebar-text;
+  font-size: 11px;
+}
+
+.sidebar-nav {
+  padding: 16px 0;
+}
+
+.nav-section {
+  padding: 8px 16px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  color: #3a5a78;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.nav-item {
+  padding: 11px 20px;
+  color: $sidebar-text;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 14px;
+  border-left: 3px solid transparent;
+  margin: 2px 0;
+
+  &:hover {
+    color: #fff;
+    background: rgba(41, 182, 246, 0.08);
+  }
+
+  &.active {
+    color: $sidebar-active;
+    background: rgba(41, 182, 246, 0.12);
+    border-left-color: $sidebar-active;
+    font-weight: 600;
+  }
+}
+
+.nav-icon {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
+}
+
+.sidebar-footer {
+  padding: 16px;
+  border-top: 1px solid #1a3a5c;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, #7B1FA2, #E91E63);
+  font-weight: 700;
+  color: #fff;
+  font-size: 14px;
+}
+
+.user-info .name {
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.user-info .role {
+  color: $sidebar-text;
+  font-size: 11px;
+}
+
+// MAIN
+.main {
+  margin-left: 240px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.topbar {
+  background: $surface;
+  border-bottom: 1px solid $border;
+  height: 64px;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.topbar-left h1 {
+  font-weight: 700;
+}
+
+.notif-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: $primary-light;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  position: relative;
+}
+
+.notif-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 8px;
+  height: 8px;
+  background: $danger;
+  border-radius: 50%;
+}
+
+.hospital-badge {
+  background: $primary-light;
+  color: $primary-dark;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.content {
+  flex: 1;
+}
+
+// HERO CARD
+.hero-card {
+  background: linear-gradient(135deg, #4A148C, #880E4F);
+  border-radius: $radius;
+  padding: 26px 28px;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  position: relative;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    right: -40px;
+    top: -40px;
+    width: 180px;
+    height: 180px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 50%;
+  }
+}
+
+.hero-avatar {
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid rgba(255, 255, 255, 0.35);
+  flex-shrink: 0;
+}
+
+.hero-title {
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.hero-subtitle {
+  opacity: 0.85;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.hero-chips {
+  margin-top: 10px;
+}
+
+.chip {
+  background: rgba(255, 255, 255, 0.18);
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+// KPI CARDS
+.kpi-card {
+  box-shadow: $shadow;
+  border: 1px solid $border;
+  border-radius: 12px;
+  transition: 0.2s;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+.kpi-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+
+  &.kpi-icon-blue {
+    background: #E1F5FE;
+  }
+
+  &.kpi-icon-teal {
+    background: #E0F2F1;
+  }
+
+  &.kpi-icon-orange {
+    background: #FFF3E0;
+  }
+
+  &.kpi-icon-purple {
+    background: #F3E5F5;
+  }
+
+  &.kpi-icon-green {
+    background: #E8F5E9;
+  }
+
+  &.kpi-icon-red {
+    background: #FFEBEE;
+  }
+}
+
+.kpi-val {
+  font-size: 26px;
+  font-weight: 700;
+
+  small {
+    font-size: 14px;
+  }
+}
+
+.kpi-lbl {
+  font-size: 12px;
+  color: $text-muted;
+}
+
+.kpi-sub {
+  font-size: 11px;
+  color: $text-muted;
+  margin-top: 4px;
+}
+
+.trend-up {
+  color: $success;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.trend-down {
+  color: $danger;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+// STATUS BOXES
+.status-box {
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+
+  &.status-box-blue {
+    background: #E3F2FD;
+  }
+
+  &.status-box-teal {
+    background: #E0F2F1;
+  }
+
+  &.status-box-red {
+    background: #FFEBEE;
+  }
+
+  &.status-box-orange {
+    background: #FFF3E0;
+  }
+
+  &.status-box-purple {
+    background: #F3E5F5;
+  }
+
+  &.status-box-green {
+    background: #E8F5E9;
+  }
+}
+
+.status-val {
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.status-lbl {
+  font-size: 10px;
+  color: $text-muted;
+  margin-top: 2px;
+}
+
+// AVERAGE CARDS
+.avg-card {
+  background: $primary-light;
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+}
+
+.avg-val {
+  font-size: 20px;
+  font-weight: 700;
+  color: $primary-dark;
+}
+
+.avg-lbl {
+  font-size: 11px;
+  color: $text-muted;
+  margin-top: 2px;
+}
+
+// BAR ROWS
+.bar-row {
+  .progress {
+    border-radius: 4px;
+    background: #D6EAF8;
+  }
+
+  .progress-bar {
+    border-radius: 4px;
+  }
+}
+
+// TABLE
+.table {
+  th {
+    font-size: 11px;
+    font-weight: 700;
+    color: $text-muted;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid $border;
+  }
+
+  td {
+    font-size: 13px;
+    vertical-align: middle;
+  }
+
+  tr:hover {
+    background: #f4fbff;
+  }
+}
+
+.doctor-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+}
+
+.rate-bar {
+  height: 5px;
+  border-radius: 3px;
+  background: #D6EAF8;
+  overflow: hidden;
+  width: 80px;
+  display: inline-block;
+}
+
+.rate-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, $primary, #00BCD4);
+}
+
+// TOP PERFORMERS
+.top-performer-row {
+  &:last-child {
+    border-bottom: none !important;
+  }
+}
+
+.medal-icon {
+  font-size: 20px;
+  width: 24px;
+  text-align: center;
+}
+
+// ANIMATIONS
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card,
+.kpi-card,
+.hero-card {
+  animation: fadeUp 0.4s ease both;
+}
+
+// RESPONSIVE
+@media (max-width: 991px) {
+  .sidebar {
+    display: none;
+  }
+
+  .main {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 767px) {
+  .topbar-right {
+    .hospital-badge {
+      display: none;
+    }
+  }
+}
+
+// LOADING & ERROR STATES
+.loading-state,
+.error-state {
+  min-height: 400px;
+}
+
+.loading-icon {
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+
+.pulse-ring {
+  position: absolute;
+  width: 80px;
+  height: 80px;
+  border: 3px solid $primary;
+  border-radius: 50%;
+  animation: pulse 1.5s ease-out infinite;
+  opacity: 0;
+
+  &.pulse-ring-delay-1 {
+    animation-delay: 0.5s;
+  }
+
+  &.pulse-ring-delay-2 {
+    animation-delay: 1s;
+  }
+}
+
+.heartbeat {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 32px;
+  animation: heartbeat 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.2);
+    opacity: 0;
+  }
+}
+
+@keyframes heartbeat {
+  0%, 100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+.error-icon {
+  font-size: 48px;
+}

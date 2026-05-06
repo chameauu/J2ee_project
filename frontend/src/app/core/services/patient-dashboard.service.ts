@@ -10,13 +10,14 @@ import {
   DashboardData,
   DashboardStats
 } from '../models';
+import { environment } from '../../../environments/environment';
 
 @Injectable({
   providedIn: 'root'
 })
 export class PatientDashboardService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:8080/api';
+  private readonly apiUrl = environment.apiUrl;
 
   /**
    * Get complete dashboard data for a patient

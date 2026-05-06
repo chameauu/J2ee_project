@@ -54,9 +54,11 @@ export class LoginComponent {
             this.router.navigate(['/pharmacist/dashboard']);
             break;
           case 'ADMINISTRATOR':
+          case 'ADMIN':
             this.router.navigate(['/admin/dashboard']);
             break;
           case 'HOSPITAL_DIRECTOR':
+          case 'DIRECTOR':
             this.router.navigate(['/director/dashboard']);
             break;
           default:
@@ -89,6 +91,15 @@ export class LoginComponent {
   quickLoginDoctor(): void {
     this.email.set('john.smith@hospital.com');
     this.password.set('doctor123');
+    this.onLogin();
+  }
+
+  /**
+   * Quick login for testing (Director)
+   */
+  quickLoginDirector(): void {
+    this.email.set('director@hospital.com');
+    this.password.set('director123');
     this.onLogin();
   }
 }

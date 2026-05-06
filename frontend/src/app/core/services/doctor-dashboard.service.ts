@@ -9,6 +9,7 @@ import {
   Prescription,
   Patient
 } from '../models';
+import { environment } from '../../../environments/environment';
 
 export interface DoctorDashboardData {
   doctor: Doctor;
@@ -23,7 +24,7 @@ export interface DoctorDashboardData {
 })
 export class DoctorDashboardService {
   private readonly http = inject(HttpClient);
-  private readonly apiUrl = 'http://localhost:8080/api';
+  private readonly apiUrl = environment.apiUrl;
 
   /**
    * Get complete dashboard data for a doctor

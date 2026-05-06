@@ -55,5 +55,10 @@ export const routes: Routes = [
     path: 'doctor/prescriptions',
     loadComponent: () => import('./features/doctor/prescriptions/prescriptions.component').then(m => m.DoctorPrescriptionsComponent),
     canActivate: [authGuard]
+  },
+  {
+    path: 'director/dashboard',
+    loadComponent: () => import('./features/director/dashboard/dashboard.component').then(m => m.DirectorDashboardComponent),
+    canActivate: [authGuard]
   }
 ];

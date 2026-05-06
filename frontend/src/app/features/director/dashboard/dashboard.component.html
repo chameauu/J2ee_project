@@ -1,0 +1,342 @@
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo d-flex align-items-center gap-2">
+    <div class="logo-icon d-flex align-items-center justify-content-center">🏥</div>
+    <div>
+      <div class="logo-text">MediCare</div>
+      <div class="logo-sub">Hospital System</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav flex-grow-1 py-3">
+    <div class="nav-section">Executive</div>
+    <div class="nav-item active d-flex align-items-center gap-3">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">👥</span> Doctor Performance
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">📈</span> Analytics
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">📋</span> Reports
+    </div>
+
+    <div class="nav-section">Management</div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">🏥</span> Hospital Overview
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">👤</span> Staff Management
+    </div>
+
+    <div class="nav-section">Account</div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">⚙️</span> Settings
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" (click)="logout()">
+      <span class="nav-icon">🚪</span> Logout
+    </div>
+  </nav>
+
+  <div class="sidebar-footer d-flex align-items-center gap-2">
+    <div class="avatar rounded-circle d-flex align-items-center justify-content-center">
+      {{ getInitials(directorName()) }}
+    </div>
+    <div class="user-info">
+      <div class="name">{{ directorName() }}</div>
+      <div class="role">Hospital Director</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar d-flex align-items-center justify-content-between px-4">
+    <div class="topbar-left">
+      <h1 class="h5 mb-0">Director Dashboard</h1>
+      <p class="text-muted small mb-0">{{ getCurrentDate() }}</p>
+    </div>
+    <div class="topbar-right d-flex align-items-center gap-3">
+      <button class="notif-btn d-flex align-items-center justify-content-center" title="Notifications">
+        🔔 <span class="notif-badge"></span>
+      </button>
+      <div class="hospital-badge">🏥 City Medical Center</div>
+    </div>
+  </div>
+
+  <div class="content p-4">
+
+    <!-- Loading State -->
+    @if (isLoading()) {
+      <div class="loading-state d-flex flex-column align-items-center justify-content-center py-5 text-center">
+        <div class="loading-icon mb-4">
+          <div class="pulse-ring"></div>
+          <div class="pulse-ring pulse-ring-delay-1"></div>
+          <div class="pulse-ring pulse-ring-delay-2"></div>
+          <div class="heartbeat">🏥</div>
+        </div>
+        <p class="h5 mb-2">Loading dashboard...</p>
+        <p class="text-muted">Fetching hospital data</p>
+      </div>
+    }
+
+    <!-- Error State -->
+    @if (errorMessage() && !isLoading()) {
+      <div class="error-state p-5 text-center">
+        <div class="error-icon mb-3">⚠️</div>
+        <h2 class="h4 mb-2">Unable to Load Dashboard</h2>
+        <p class="text-muted mb-4">{{ errorMessage() }}</p>
+        <button class="btn btn-primary" (click)="loadDashboardData()">
+          <span class="me-2">🔄</span>
+          Try Again
+        </button>
+      </div>
+    }
+
+    <!-- Content -->
+    @if (!isLoading() && !errorMessage() && dashboardData()) {
+
+    <!-- HERO -->
+    <div class="hero-card mb-4">
+      <div class="hero-avatar">👩‍💼</div>
+      <div class="hero-content">
+        <h2 class="hero-title">Executive Overview — {{ dashboardData()!.hospitalName }}</h2>
+        <p class="hero-subtitle">Hospital Director · Administration Department · 12 years experience</p>
+        <div class="hero-chips d-flex gap-2 flex-wrap mt-2">
+          <span class="chip">📅 Today: <b>{{ dashboardData()!.todaysAppointments }}</b> appointments</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI CARDS -->
+    <div class="row g-3 mb-4">
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card kpi-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="kpi-icon kpi-icon-blue">👨‍⚕️</div>
+              <span class="trend-up">↑ 2 this month</span>
+            </div>
+            <div class="kpi-val">{{ dashboardData()!.totalDoctors }}</div>
+            <div class="kpi-lbl">Total Doctors</div>
+            <div class="kpi-sub">Avg {{ dashboardData()!.averageAppointmentsPerDoctor }} appts/doctor</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card kpi-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="kpi-icon kpi-icon-teal">🧑‍🤝‍🧑</div>
+              <span class="trend-up">↑ 18 this month</span>
+            </div>
+            <div class="kpi-val">{{ dashboardData()!.totalPatients }}</div>
+            <div class="kpi-lbl">Total Patients</div>
+            <div class="kpi-sub">Avg {{ dashboardData()!.averagePatientsPerDoctor }} patients/doctor</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card kpi-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="kpi-icon kpi-icon-purple">�</div>
+              <span class="trend-down">↓ 3% vs last month</span>
+            </div>
+            <div class="kpi-val">{{ dashboardData()!.totalAppointments }}</div>
+            <div class="kpi-lbl">Total Appointments</div>
+            <div class="kpi-sub">Today: {{ dashboardData()!.todaysAppointments }}</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card kpi-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="kpi-icon kpi-icon-green">�</div>
+              <span class="trend-up">↑ 32 this month</span>
+            </div>
+            <div class="kpi-val">{{ dashboardData()!.totalMedicalRecords }}</div>
+            <div class="kpi-lbl">Medical Records</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card kpi-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="kpi-icon kpi-icon-teal">✅</div>
+              <span class="trend-up">↑ 4% vs last month</span>
+            </div>
+            <div class="kpi-val">{{ dashboardData()!.appointmentCompletionRate.toFixed(0) }}<small>%</small></div>
+            <div class="kpi-lbl">Completion Rate</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-sm-6 col-lg-3">
+        <div class="card kpi-card">
+          <div class="card-body">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+              <div class="kpi-icon kpi-icon-purple">�</div>
+              <span class="trend-up">↑ 7% vs last month</span>
+            </div>
+            <div class="kpi-val">{{ dashboardData()!.doctorUtilizationRate.toFixed(0) }}<small>%</small></div>
+            <div class="kpi-lbl">Doctor Utilization</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 1: Status Breakdown -->
+    <div class="row g-4 mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">📊 Appointment Status Breakdown</h5>
+            <div class="row g-2">
+              <div class="col-4">
+                <div class="status-box status-box-blue">
+                  <div class="status-val">{{ dashboardData()!.scheduledAppointments }}</div>
+                  <div class="status-lbl">Scheduled</div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="status-box status-box-teal">
+                  <div class="status-val">{{ dashboardData()!.completedAppointments }}</div>
+                  <div class="status-lbl">Completed</div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="status-box status-box-red">
+                  <div class="status-val">{{ dashboardData()!.cancelledAppointments }}</div>
+                  <div class="status-lbl">Cancelled</div>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="status-box status-box-green">
+                  <div class="status-val">{{ dashboardData()!.todaysAppointments }}</div>
+                  <div class="status-lbl">Today's Appts</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DOCTOR PERFORMANCE TABLE -->
+    <div class="card mb-4">
+      <div class="card-body">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h5 class="card-title mb-0">👨‍⚕️ Doctor Performance</h5>
+          <button class="btn btn-sm btn-outline-primary">Export →</button>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead>
+              <tr>
+                <th>Doctor</th>
+                <th>Specialization</th>
+                <th>Patients</th>
+                <th>Appointments</th>
+                <th>Completed</th>
+                <th>Completion Rate</th>
+                <th>Records</th>
+                <th>Today</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (doctor of doctorPerformance(); track doctor.doctorId) {
+                <tr>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="doctor-avatar" [style.background]="doctor.color">
+                        {{ getDoctorInitials(doctor.doctorName) }}
+                      </div>
+                      <div>
+                        <div class="fw-semibold">{{ doctor.doctorName }}</div>
+                        <div class="small text-muted">ID #{{ doctor.doctorId }}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td>{{ doctor.specialization }}</td>
+                  <td><b>{{ doctor.totalPatients }}</b></td>
+                  <td>{{ doctor.totalAppointments }}</td>
+                  <td class="text-success">{{ doctor.completedAppointments }}</td>
+                  <td>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="rate-bar">
+                        <div class="rate-fill" [style.width.%]="doctor.completionRate"></div>
+                      </div>
+                      <span class="badge" [ngClass]="getRateBadgeClass(doctor.completionRate)">
+                        {{ doctor.completionRate }}%
+                      </span>
+                    </div>
+                  </td>
+                  <td>{{ doctor.totalMedicalRecords }}</td>
+                  <td><b>{{ doctor.todaysAppointments }}</b></td>
+                  <td><span class="badge bg-success">Active</span></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROW 3: Specialization Breakdown + Top Performers -->
+    <div class="row g-4 mb-4">
+      <div class="col-12 col-lg-6">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">🏥 Appointments by Specialization</h5>
+            @for (spec of specializationStats(); track spec.specialization) {
+              <div class="bar-row mb-3">
+                <div class="d-flex justify-content-between small text-muted mb-1">
+                  <span>{{ spec.specialization }}</span>
+                  <span><b>{{ spec.appointments }} appts ({{ spec.percentage }}%)</b></span>
+                </div>
+                <div class="progress" style="height: 7px;">
+                  <div class="progress-bar bg-primary" [style.width.%]="spec.percentage"></div>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="col-12 col-lg-6">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">🏆 Top Performers This Month</h5>
+            @for (doctor of topPerformers(); track doctor.doctorId; let i = $index) {
+              <div class="top-performer-row d-flex align-items-center gap-3 py-2 border-bottom">
+                <div class="medal-icon">{{ getMedalEmoji(i) }}</div>
+                <div class="doctor-avatar" [style.background]="doctor.color">
+                  {{ getDoctorInitials(doctor.doctorName) }}
+                </div>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold">{{ doctor.doctorName }}</div>
+                  <div class="small text-muted">{{ doctor.specialization }}</div>
+                </div>
+                <span class="badge bg-success">{{ doctor.completionRate }}%</span>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+    </div>
+
+    }<!-- /content conditional -->
+
+  </div><!-- /content -->
+</div><!-- /main -->

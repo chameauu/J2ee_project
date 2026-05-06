@@ -81,6 +81,14 @@
         >
           Login as Doctor
         </button>
+        <button 
+          type="button" 
+          class="btn-secondary" 
+          (click)="quickLoginDirector()"
+          [disabled]="isLoading()"
+        >
+          Login as Director
+        </button>
       </div>
     </div>
   </div>
