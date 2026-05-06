@@ -1,0 +1,299 @@
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo d-flex align-items-center gap-2">
+    <div class="logo-icon d-flex align-items-center justify-content-center">🏥</div>
+    <div>
+      <div class="logo-text">MediCare</div>
+      <div class="logo-sub">Hospital System</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav flex-grow-1 py-3">
+    <div class="nav-section">Main</div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/patient/dashboard">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/patient/appointments">
+      <span class="nav-icon">📅</span> Appointments
+    </div>
+    <div class="nav-item active d-flex align-items-center gap-3">
+      <span class="nav-icon">📋</span> Medical Records
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/patient/prescriptions">
+      <span class="nav-icon">💊</span> Prescriptions
+    </div>
+
+    <div class="nav-section">Account</div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">👤</span> My Profile
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">⚙️</span> Settings
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" (click)="logout()">
+      <span class="nav-icon">🚪</span> Logout
+    </div>
+  </nav>
+
+  <div class="sidebar-footer d-flex align-items-center gap-2">
+    <div class="avatar rounded-circle d-flex align-items-center justify-content-center">
+      {{ getInitials(patientName()) }}
+    </div>
+    <div class="user-info">
+      <div class="name">{{ patientName() }}</div>
+      <div class="role">Patient</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar d-flex align-items-center justify-content-between px-4">
+    <div class="topbar-left">
+      <h1 class="h5 mb-0">Medical Records</h1>
+      <p class="text-muted small mb-0">{{ getCurrentDate() }}</p>
+    </div>
+    <div class="topbar-right d-flex align-items-center gap-3">
+      <button class="notif-btn d-flex align-items-center justify-content-center" title="Notifications">
+        🔔 <span class="notif-badge"></span>
+      </button>
+      <div class="hospital-badge">🏥 City Medical Center</div>
+    </div>
+  </div>
+
+  <div class="content p-4">
+
+    <!-- Loading State -->
+    @if (isLoading()) {
+      <div class="loading-state d-flex flex-column align-items-center justify-content-center py-5 text-center">
+        <div class="loading-icon mb-4">
+          <div class="pulse-ring"></div>
+          <div class="pulse-ring pulse-ring-delay-1"></div>
+          <div class="pulse-ring pulse-ring-delay-2"></div>
+          <div class="heartbeat">📋</div>
+        </div>
+        <p class="h5 mb-2">Loading your medical records...</p>
+        <p class="text-muted">Fetching your health history</p>
+      </div>
+    }
+
+    <!-- Error State -->
+    @if (errorMessage() && !isLoading()) {
+      <div class="error-state p-5 text-center">
+        <div class="error-icon mb-3">⚠️</div>
+        <h2 class="h4 mb-2">Unable to Load Medical Records</h2>
+        <p class="text-muted mb-4">{{ errorMessage() }}</p>
+        <button class="btn btn-primary" (click)="loadMedicalRecords()">
+          <span class="me-2">🔄</span>
+          Try Again
+        </button>
+      </div>
+    }
+
+    <!-- Content -->
+    @if (!isLoading() && !errorMessage()) {
+      <!-- STATS -->
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+          <div class="card stat-card text-center">
+            <div class="card-body">
+              <div class="stat-val text-primary">{{ stats().total }}</div>
+              <div class="stat-lbl text-muted small">All Records</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="card stat-card text-center">
+            <div class="card-body">
+              <div class="stat-val text-success">{{ stats().thisYear }}</div>
+              <div class="stat-lbl text-muted small">This Year</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="card stat-card text-center">
+            <div class="card-body">
+              <div class="stat-val text-info">{{ stats().lastMonth }}</div>
+              <div class="stat-lbl text-muted small">Last Month</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar d-flex gap-3 mb-4 flex-wrap">
+        <div class="search-box flex-grow-1">
+          <span class="search-icon">🔍</span>
+          <input 
+            type="text" 
+            class="form-control" 
+            placeholder="Search records, diagnoses, treatments..."
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="searchQuery.set($event)">
+        </div>
+        <select 
+          class="form-select filter-select" 
+          [(ngModel)]="filterYear"
+          (ngModelChange)="filterYear.set($event)">
+          <option value="">All Years</option>
+          @for (year of availableYears(); track year) {
+            <option [value]="year">{{ year }}</option>
+          }
+        </select>
+      </div>
+
+      <!-- LAYOUT -->
+      <div class="row g-4">
+        <!-- TIMELINE -->
+        <div class="col-12 col-lg-8">
+          <div class="card">
+            <div class="card-body">
+              <div class="card-header d-flex align-items-center justify-content-between mb-3">
+                <span class="card-title fw-bold">📋 Record Timeline</span>
+                <span class="count-label small text-muted">
+                  {{ filteredRecords().length }} record{{ filteredRecords().length !== 1 ? 's' : '' }}
+                </span>
+              </div>
+
+              @if (filteredRecords().length === 0) {
+                <div class="no-records text-center py-5">
+                  <div class="icon fs-1 mb-3">📋</div>
+                  <p class="text-muted">No records match your search.</p>
+                </div>
+              } @else {
+                <div class="timeline">
+                  @for (year of years(); track year) {
+                    <div class="year-section mb-4">
+                      <div class="year-label fw-bold text-muted small mb-3">{{ year }}</div>
+                      @for (record of recordsByYear()[year]; track record.id) {
+                        <div 
+                          class="timeline-item p-3 mb-2 rounded"
+                          [class.selected]="selectedRecordId() === record.id"
+                          (click)="selectRecord(record.id)">
+                          <div class="d-flex gap-3">
+                            <div class="record-icon d-flex align-items-center justify-content-center">
+                              🩺
+                            </div>
+                            <div class="flex-grow-1">
+                              <div class="record-title fw-semibold">{{ record.chiefComplaint }}</div>
+                              <div class="record-meta small text-muted mt-1">
+                                👨‍⚕️ {{ record.doctorName || 'Doctor ID: ' + record.doctorId }}
+                                @if (record.doctorSpecialization) {
+                                  · {{ record.doctorSpecialization }}
+                                }
+                              </div>
+                              <div class="record-diagnosis small mt-2">{{ record.diagnosis }}</div>
+                            </div>
+                            <div class="record-date small text-muted text-nowrap">
+                              📅 {{ formatDate(record.visitDate) }}
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- DETAIL PANEL -->
+        <div class="col-12 col-lg-4">
+          <div class="card sticky-top" style="top: 80px;">
+            <div class="card-body">
+              <div class="card-header mb-3">
+                <span class="card-title fw-bold">📄 Record Details</span>
+              </div>
+
+              @if (!selectedRecord()) {
+                <div class="detail-empty text-center py-5">
+                  <div class="icon fs-1 mb-3">📋</div>
+                  <p class="text-muted small">Select a record to view details</p>
+                </div>
+              } @else {
+                <div class="detail-content">
+                  <!-- Header -->
+                  <div class="detail-section mb-3">
+                    <div class="d-flex align-items-center gap-3 mb-3">
+                      <div class="record-icon-large d-flex align-items-center justify-content-center">
+                        🩺
+                      </div>
+                      <div>
+                        <div class="detail-title fw-bold">{{ selectedRecord()!.chiefComplaint }}</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <hr class="my-3">
+
+                  <!-- Doctor Info -->
+                  <div class="detail-section mb-3">
+                    <div class="detail-label small fw-bold text-muted mb-2">ATTENDING DOCTOR</div>
+                    <div class="detail-value">
+                      👨‍⚕️ {{ selectedRecord()!.doctorName || 'Doctor ID: ' + selectedRecord()!.doctorId }}
+                      @if (selectedRecord()!.doctorSpecialization) {
+                        <div class="small text-muted">{{ selectedRecord()!.doctorSpecialization }}</div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Date -->
+                  <div class="detail-section mb-3">
+                    <div class="detail-label small fw-bold text-muted mb-2">DATE</div>
+                    <div class="detail-value">📅 {{ formatDateTime(selectedRecord()!.visitDate) }}</div>
+                  </div>
+
+                  <!-- Diagnosis -->
+                  <div class="detail-section mb-3">
+                    <div class="detail-label small fw-bold text-muted mb-2">DIAGNOSIS</div>
+                    <div class="diagnosis-box p-3 rounded bg-light">
+                      <small>{{ selectedRecord()!.diagnosis }}</small>
+                    </div>
+                  </div>
+
+                  <!-- Treatment -->
+                  <div class="detail-section mb-3">
+                    <div class="detail-label small fw-bold text-muted mb-2">TREATMENT</div>
+                    <div class="treatment-box p-3 rounded bg-light">
+                      <small>{{ selectedRecord()!.treatment }}</small>
+                    </div>
+                  </div>
+
+                  <!-- Vital Signs -->
+                  @if (selectedRecord()!.vitalSigns) {
+                    <div class="detail-section mb-3">
+                      <div class="detail-label small fw-bold text-muted mb-2">VITAL SIGNS</div>
+                      <div class="vitals-box p-3 rounded bg-light">
+                        <small>{{ selectedRecord()!.vitalSigns }}</small>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Notes -->
+                  @if (selectedRecord()!.notes) {
+                    <div class="detail-section mb-3">
+                      <div class="detail-label small fw-bold text-muted mb-2">DOCTOR'S NOTES</div>
+                      <div class="notes-box p-3 rounded bg-light">
+                        <small class="fst-italic">"{{ selectedRecord()!.notes }}"</small>
+                      </div>
+                    </div>
+                  }
+
+                  <hr class="my-3">
+
+                  <!-- Actions -->
+                  <button class="btn btn-primary w-100" (click)="downloadRecord(selectedRecord()!)">
+                    <span class="me-2">⬇</span> Download PDF
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+  </div><!-- /content -->
+</div><!-- /main -->

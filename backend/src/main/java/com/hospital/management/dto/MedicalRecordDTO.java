@@ -21,6 +21,10 @@ public class MedicalRecordDTO {
     @NotNull(message = "Doctor ID is required")
     private Long doctorId;
 
+    // Read-only fields for doctor information
+    private String doctorName;
+    private String doctorSpecialization;
+
     private LocalDateTime visitDate;
 
     @NotBlank(message = "Chief complaint is required")

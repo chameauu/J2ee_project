@@ -89,6 +89,7 @@ e2e/**/*.map
 .cache/
 .eslintcache
 .stylelintcache
+frontend-test
 
 # Storybook
 storybook-static/

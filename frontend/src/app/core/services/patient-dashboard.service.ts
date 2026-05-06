@@ -96,10 +96,10 @@ export class PatientDashboardService {
       )
       .slice(0, 3);
 
-    // Filter active prescriptions (pending or dispensed, and not expired)
+    // Filter active prescriptions (active or dispensed, and not expired)
     const activePrescriptions = data.prescriptions
       .filter(p => 
-        (p.status === 'PENDING' || p.status === 'DISPENSED') && 
+        (p.status === 'ACTIVE' || p.status === 'DISPENSED') && 
         new Date(p.validUntil) >= now
       );
 

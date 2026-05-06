@@ -22,6 +22,10 @@ public class PrescriptionDTO {
     @NotNull(message = "Doctor ID is required")
     private Long doctorId;
 
+    // Read-only fields for doctor information
+    private String doctorName;
+    private String doctorSpecialization;
+
     private Long medicalRecordId;
 
     @NotNull(message = "Prescribed date is required")

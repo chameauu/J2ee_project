@@ -1,1 +1,71 @@
-/* You can add global styles to this file, and also import other style files */
+/* Import Bootstrap */
+@import 'bootstrap/scss/bootstrap';
+
+/* Custom Theme Variables */
+:root {
+  --primary: #29B6F6;
+  --primary-dark: #0288D1;
+  --primary-light: #E1F5FE;
+  --accent: #00BCD4;
+  --success: #26A69A;
+  --warning: #FFA726;
+  --danger: #EF5350;
+  --bg: #F0F7FF;
+  --surface: #FFFFFF;
+  --sidebar-bg: #0D2B45;
+  --sidebar-text: #B0C4D8;
+  --sidebar-active: #29B6F6;
+  --text: #1A2E44;
+  --text-muted: #6B8BA4;
+  --border: #D6EAF8;
+  --shadow: 0 4px 20px rgba(41, 182, 246, 0.12);
+  --radius: 14px;
+}
+
+/* Global Styles */
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* Custom Bootstrap Overrides */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--accent));
+  border: none;
+  
+  &:hover {
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(41, 182, 246, 0.35);
+  }
+}
+
+.card {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+}
+
+.badge {
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+/* Animations */
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.fade-up {
+  animation: fadeUp 0.5s ease both;
+}

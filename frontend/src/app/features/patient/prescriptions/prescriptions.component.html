@@ -1,0 +1,388 @@
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo d-flex align-items-center gap-2">
+    <div class="logo-icon d-flex align-items-center justify-content-center">🏥</div>
+    <div>
+      <div class="logo-text">MediCare</div>
+      <div class="logo-sub">Hospital System</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav flex-grow-1 py-3">
+    <div class="nav-section">Main</div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/patient/dashboard">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/patient/appointments">
+      <span class="nav-icon">📅</span> Appointments
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/patient/medical-records">
+      <span class="nav-icon">📋</span> Medical Records
+    </div>
+    <div class="nav-item active d-flex align-items-center gap-3">
+      <span class="nav-icon">💊</span> Prescriptions
+    </div>
+
+    <div class="nav-section">Account</div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">👤</span> My Profile
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">⚙️</span> Settings
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" (click)="logout()">
+      <span class="nav-icon">🚪</span> Logout
+    </div>
+  </nav>
+
+  <div class="sidebar-footer d-flex align-items-center gap-2">
+    <div class="avatar rounded-circle d-flex align-items-center justify-content-center">
+      {{ getInitials(patientName()) }}
+    </div>
+    <div class="user-info">
+      <div class="name">{{ patientName() }}</div>
+      <div class="role">Patient</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar d-flex align-items-center justify-content-between px-4">
+    <div class="topbar-left">
+      <h1 class="h5 mb-0">My Prescriptions</h1>
+      <p class="text-muted small mb-0">{{ getCurrentDate() }}</p>
+    </div>
+    <div class="topbar-right d-flex align-items-center gap-3">
+      <button class="notif-btn d-flex align-items-center justify-content-center" title="Notifications">
+        🔔 <span class="notif-badge"></span>
+      </button>
+      <div class="hospital-badge">🏥 City Medical Center</div>
+    </div>
+  </div>
+
+  <div class="content p-4">
+
+    <!-- Loading State -->
+    @if (isLoading()) {
+      <div class="loading-state d-flex flex-column align-items-center justify-content-center py-5 text-center">
+        <div class="loading-icon mb-4">
+          <div class="pulse-ring"></div>
+          <div class="pulse-ring pulse-ring-delay-1"></div>
+          <div class="pulse-ring pulse-ring-delay-2"></div>
+          <div class="heartbeat">💊</div>
+        </div>
+        <p class="h5 mb-2">Loading your prescriptions...</p>
+        <p class="text-muted">Fetching your medications</p>
+      </div>
+    }
+
+    <!-- Error State -->
+    @if (errorMessage() && !isLoading()) {
+      <div class="error-state p-5 text-center">
+        <div class="error-icon mb-3">⚠️</div>
+        <h2 class="h4 mb-2">Unable to Load Prescriptions</h2>
+        <p class="text-muted mb-4">{{ errorMessage() }}</p>
+        <button class="btn btn-primary" (click)="loadPrescriptions()">
+          <span class="me-2">🔄</span>
+          Try Again
+        </button>
+      </div>
+    }
+
+    <!-- Content -->
+    @if (!isLoading() && !errorMessage()) {
+      <!-- STATS -->
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-lg-3">
+          <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="stat-icon stat-icon-blue">💊</div>
+              <div>
+                <div class="stat-val">{{ stats().total }}</div>
+                <div class="stat-lbl">All Prescriptions</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+          <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="stat-icon stat-icon-green">✅</div>
+              <div>
+                <div class="stat-val">{{ stats().active }}</div>
+                <div class="stat-lbl">Active</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+          <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="stat-icon stat-icon-orange">📦</div>
+              <div>
+                <div class="stat-val">{{ stats().dispensed }}</div>
+                <div class="stat-lbl">Dispensed</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+          <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="stat-icon stat-icon-red">⏰</div>
+              <div>
+                <div class="stat-val">{{ stats().expired }}</div>
+                <div class="stat-lbl">Expired</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div class="tabs d-flex gap-2 mb-4">
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab() === 'all'"
+          (click)="setTab('all')">
+          All
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab() === 'ACTIVE'"
+          (click)="setTab('ACTIVE')">
+          Active
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="activeTab() === 'DISPENSED'"
+          (click)="setTab('DISPENSED')">
+          Dispensed
+        </button>
+      </div>
+
+      <!-- TOOLBAR -->
+      <div class="toolbar d-flex gap-3 mb-4 flex-wrap">
+        <div class="search-box flex-grow-1">
+          <span class="search-icon">🔍</span>
+          <input 
+            type="text" 
+            class="form-control" 
+            placeholder="Search medication..."
+            [(ngModel)]="searchQuery"
+            (ngModelChange)="searchQuery.set($event)">
+        </div>
+        <select 
+          class="form-select sort-select" 
+          [(ngModel)]="sortBy"
+          (ngModelChange)="sortBy.set($event)">
+          <option value="date-desc">Newest first</option>
+          <option value="date-asc">Oldest first</option>
+          <option value="name">By medication name</option>
+        </select>
+      </div>
+
+      <!-- LAYOUT -->
+      <div class="row g-4">
+        <!-- PRESCRIPTION LIST -->
+        <div class="col-12 col-lg-8">
+          @if (filteredPrescriptions().length === 0) {
+            <div class="card">
+              <div class="card-body">
+                <div class="no-prescriptions text-center py-5">
+                  <div class="icon fs-1 mb-3">💊</div>
+                  <p class="text-muted">No prescriptions found.</p>
+                </div>
+              </div>
+            </div>
+          } @else {
+            <div class="prescriptions-grid">
+              @for (rx of filteredPrescriptions(); track rx.id) {
+                <div 
+                  class="rx-card card"
+                  [class]="getStatusClass(rx.status) + (isExpired(rx) ? ' rx-expired' : '')"
+                  [class.selected]="selectedPrescriptionId() === rx.id"
+                  (click)="selectPrescription(rx.id)">
+                  <div class="card-body">
+                    <!-- Header -->
+                    <div class="rx-header d-flex align-items-start justify-content-between mb-3">
+                      <div>
+                        <div class="rx-name">💊 {{ rx.medicationName }}</div>
+                        <div class="rx-dosage small text-muted">{{ rx.dosage }}</div>
+                      </div>
+                      <span class="badge" [class]="getBadgeClass(rx.status)">
+                        {{ rx.status }}
+                      </span>
+                    </div>
+
+                    <!-- Pills -->
+                    <div class="rx-pills d-flex flex-wrap gap-2 mb-3">
+                      <span class="pill">💊 {{ rx.dosage }}</span>
+                      <span class="pill">🔄 {{ rx.frequency }}</span>
+                      @if (rx.durationDays) {
+                        <span class="pill">📅 {{ rx.durationDays }} days</span>
+                      }
+                    </div>
+
+                    <!-- Meta -->
+                    <div class="rx-meta row g-2 mb-3">
+                      <div class="col-6">
+                        <small class="text-muted">Prescribed:</small>
+                        <div class="fw-semibold small">{{ formatDate(rx.prescribedDate) }}</div>
+                      </div>
+                      <div class="col-6">
+                        <small class="text-muted">Valid until:</small>
+                        <div class="fw-semibold small">{{ formatDate(rx.validUntil) }}</div>
+                      </div>
+                    </div>
+
+                    <!-- Validity Bar (for active prescriptions) -->
+                    @if (rx.status === 'ACTIVE' && !isExpired(rx)) {
+                      <div class="validity-bar mb-3">
+                        <div class="d-flex justify-content-between small text-muted mb-1">
+                          <span>Validity remaining</span>
+                          <span>{{ getDaysLeft(rx.validUntil) }} days left</span>
+                        </div>
+                        <div class="progress" style="height: 5px;">
+                          <div 
+                            class="progress-bar"
+                            [class]="getValidityColorClass(getValidityPercentage(rx))"
+                            [style.width.%]="getValidityPercentage(rx)">
+                          </div>
+                        </div>
+                      </div>
+                    }
+
+                    <!-- Footer -->
+                    <div class="rx-footer d-flex align-items-center justify-content-between pt-3 border-top">
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="doctor-avatar">{{ getDoctorInitials(rx) }}</div>
+                        <div>
+                          <div class="small fw-semibold">{{ rx.doctorName || 'Doctor ID: ' + rx.doctorId }}</div>
+                          @if (rx.doctorSpecialization) {
+                            <div class="small text-muted">{{ rx.doctorSpecialization }}</div>
+                          }
+                        </div>
+                      </div>
+                      <div class="small text-muted">📅 {{ formatDate(rx.prescribedDate) }}</div>
+                    </div>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+
+        <!-- DETAIL PANEL -->
+        <div class="col-12 col-lg-4">
+          <div class="card detail-panel sticky-top" style="top: 80px;">
+            <div class="card-body">
+              <h6 class="card-title mb-3">💊 Prescription Details</h6>
+
+              @if (!selectedPrescription()) {
+                <div class="detail-empty text-center py-5">
+                  <div class="icon fs-1 mb-3">💊</div>
+                  <p class="text-muted small">Select a prescription to view details</p>
+                </div>
+              } @else {
+                <div class="detail-content">
+                  <!-- Header -->
+                  <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="rx-icon-large">💊</div>
+                    <div>
+                      <div class="fw-bold">{{ selectedPrescription()!.medicationName }}</div>
+                      <span class="badge" [class]="getBadgeClass(selectedPrescription()!.status)">
+                        {{ selectedPrescription()!.status }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <hr>
+
+                  <!-- Details -->
+                  <div class="detail-section mb-3">
+                    <div class="detail-label">DOSAGE & FREQUENCY</div>
+                    <div class="detail-value">
+                      {{ selectedPrescription()!.dosage }} — {{ selectedPrescription()!.frequency }}
+                      @if (selectedPrescription()!.durationDays) {
+                        for {{ selectedPrescription()!.durationDays }} days
+                      }
+                    </div>
+                  </div>
+
+                  <div class="detail-section mb-3">
+                    <div class="detail-label">VALIDITY</div>
+                    <div class="detail-value">
+                      {{ formatDate(selectedPrescription()!.prescribedDate) }} → 
+                      {{ formatDate(selectedPrescription()!.validUntil) }}
+                      @if (selectedPrescription()!.status === 'ACTIVE' && !isExpired(selectedPrescription()!)) {
+                        <span class="text-success small">
+                          ({{ getDaysLeft(selectedPrescription()!.validUntil) }} days left)
+                        </span>
+                      }
+                    </div>
+                  </div>
+
+                  <div class="detail-section mb-3">
+                    <div class="detail-label">PRESCRIBED BY</div>
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="doctor-avatar">{{ getDoctorInitials(selectedPrescription()!) }}</div>
+                      <div>
+                        <div class="small fw-semibold">{{ selectedPrescription()!.doctorName || 'Doctor ID: ' + selectedPrescription()!.doctorId }}</div>
+                        @if (selectedPrescription()!.doctorSpecialization) {
+                          <div class="small text-muted">{{ selectedPrescription()!.doctorSpecialization }}</div>
+                        }
+                      </div>
+                    </div>
+                  </div>
+
+                  @if (selectedPrescription()!.instructions) {
+                    <div class="detail-section mb-3">
+                      <div class="detail-label">INSTRUCTIONS</div>
+                      <div class="instructions-box p-3 rounded bg-light">
+                        <small>"{{ selectedPrescription()!.instructions }}"</small>
+                      </div>
+                    </div>
+                  }
+
+                  @if (selectedPrescription()!.notes) {
+                    <div class="detail-section mb-3">
+                      <div class="detail-label">NOTES</div>
+                      <div class="notes-box p-3 rounded bg-light">
+                        <small class="fst-italic">"{{ selectedPrescription()!.notes }}"</small>
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Validity Bar -->
+                  @if (selectedPrescription()!.status === 'ACTIVE' && !isExpired(selectedPrescription()!)) {
+                    <div class="detail-section mb-3">
+                      <div class="detail-label">VALIDITY REMAINING</div>
+                      <div class="progress" style="height: 8px;">
+                        <div 
+                          class="progress-bar"
+                          [class]="getValidityColorClass(getValidityPercentage(selectedPrescription()!))"
+                          [style.width.%]="getValidityPercentage(selectedPrescription()!)">
+                        </div>
+                      </div>
+                    </div>
+                  }
+
+                  <hr>
+
+                  <!-- Actions -->
+                  <button class="btn btn-primary w-100" (click)="downloadPrescription(selectedPrescription()!)">
+                    <span class="me-2">⬇</span> Download PDF
+                  </button>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+  </div><!-- /content -->
+</div><!-- /main -->

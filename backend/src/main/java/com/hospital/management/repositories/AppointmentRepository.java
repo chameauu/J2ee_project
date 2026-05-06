@@ -31,12 +31,8 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     @Query("SELECT CASE WHEN COUNT(a) > 0 THEN true ELSE false END FROM Appointment a " +
            "WHERE a.doctor.id = :doctorId " +
            "AND a.status != 'CANCELLED' " +
-           "AND ((a.appointmentDateTime <= :startTime AND " +
-           "      FUNCTION('DATE_ADD', a.appointmentDateTime, a.durationMinutes, 'MINUTE') > :startTime) " +
-           "OR (a.appointmentDateTime < :endTime AND " +
-           "    FUNCTION('DATE_ADD', a.appointmentDateTime, a.durationMinutes, 'MINUTE') >= :endTime) " +
-           "OR (a.appointmentDateTime >= :startTime AND " +
-           "    FUNCTION('DATE_ADD', a.appointmentDateTime, a.durationMinutes, 'MINUTE') <= :endTime))")
+           "AND a.appointmentDateTime < :endTime " +
+           "AND DATEADD(MINUTE, a.durationMinutes, a.appointmentDateTime) > :startTime")
     boolean hasTimeSlotConflict(
             @Param("doctorId") Long doctorId,
             @Param("startTime") LocalDateTime startTime,
