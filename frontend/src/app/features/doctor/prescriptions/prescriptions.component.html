@@ -10,13 +10,16 @@
 
   <nav class="sidebar-nav flex-grow-1 py-3">
     <div class="nav-section">Main</div>
-    <div class="nav-item d-flex align-items-center gap-3" routerLink="/patient/dashboard">
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
       <span class="nav-icon">📊</span> Dashboard
     </div>
-    <div class="nav-item d-flex align-items-center gap-3" routerLink="/patient/appointments">
-      <span class="nav-icon">📅</span> Appointments
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/schedule" routerLinkActive="active">
+      <span class="nav-icon">📅</span> My Schedule
     </div>
-    <div class="nav-item d-flex align-items-center gap-3" routerLink="/patient/medical-records">
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/patients" routerLinkActive="active">
+      <span class="nav-icon">👥</span> My Patients
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/medical-records" routerLinkActive="active">
       <span class="nav-icon">📋</span> Medical Records
     </div>
     <div class="nav-item active d-flex align-items-center gap-3">
@@ -37,11 +40,11 @@
 
   <div class="sidebar-footer d-flex align-items-center gap-2">
     <div class="avatar rounded-circle d-flex align-items-center justify-content-center">
-      {{ getInitials(patientName()) }}
+      {{ getInitials(doctorName()) }}
     </div>
     <div class="user-info">
-      <div class="name">{{ patientName() }}</div>
-      <div class="role">Patient</div>
+      <div class="name">{{ doctorName() }}</div>
+      <div class="role">Doctor</div>
     </div>
   </div>
 </aside>
@@ -73,8 +76,8 @@
           <div class="pulse-ring pulse-ring-delay-2"></div>
           <div class="heartbeat">💊</div>
         </div>
-        <p class="h5 mb-2">Loading your prescriptions...</p>
-        <p class="text-muted">Fetching your medications</p>
+        <p class="h5 mb-2">Loading prescriptions...</p>
+        <p class="text-muted">Fetching prescription list</p>
       </div>
     }
 
@@ -101,7 +104,7 @@
               <div class="stat-icon stat-icon-blue">💊</div>
               <div>
                 <div class="stat-val">{{ stats().total }}</div>
-                <div class="stat-lbl">All Prescriptions</div>
+                <div class="stat-lbl">Total Prescriptions</div>
               </div>
             </div>
           </div>
@@ -133,8 +136,8 @@
             <div class="card-body d-flex align-items-center gap-3">
               <div class="stat-icon stat-icon-red">⏰</div>
               <div>
-                <div class="stat-val">{{ stats().expired }}</div>
-                <div class="stat-lbl">Expired</div>
+                <div class="stat-val">{{ stats().expiringSoon }}</div>
+                <div class="stat-lbl">Expiring Soon</div>
               </div>
             </div>
           </div>
@@ -145,55 +148,55 @@
       <div class="tabs d-flex gap-2 mb-4">
         <button 
           class="tab-btn" 
-          [class.active]="activeTab() === 'all'"
-          (click)="setTab('all')">
-          All
+          [class.active]="selectedTab() === 'ALL'"
+          (click)="selectTab('ALL')">
+          All ({{ tabCounts().all }})
         </button>
         <button 
           class="tab-btn" 
-          [class.active]="activeTab() === 'ACTIVE'"
-          (click)="setTab('ACTIVE')">
-          Active
+          [class.active]="selectedTab() === 'ACTIVE'"
+          (click)="selectTab('ACTIVE')">
+          Active ({{ tabCounts().active }})
         </button>
         <button 
           class="tab-btn" 
-          [class.active]="activeTab() === 'DISPENSED'"
-          (click)="setTab('DISPENSED')">
-          Dispensed
+          [class.active]="selectedTab() === 'DISPENSED'"
+          (click)="selectTab('DISPENSED')">
+          Dispensed ({{ tabCounts().dispensed }})
+        </button>
+        <button 
+          class="tab-btn" 
+          [class.active]="selectedTab() === 'EXPIRED'"
+          (click)="selectTab('EXPIRED')">
+          Expired ({{ tabCounts().expired }})
         </button>
       </div>
 
-      <!-- TOOLBAR -->
-      <div class="toolbar d-flex gap-3 mb-4 flex-wrap">
-        <div class="search-box flex-grow-1">
-          <span class="search-icon">🔍</span>
+      <!-- SEARCH BAR -->
+      <div class="search-bar mb-4">
+        <div class="input-group">
+          <span class="input-group-text bg-white border-end-0">
+            <span class="search-icon">🔍</span>
+          </span>
           <input 
             type="text" 
-            class="form-control" 
-            placeholder="Search medication..."
+            class="form-control border-start-0 ps-0" 
+            placeholder="Search by patient, medication, or dosage..."
             [(ngModel)]="searchQuery"
-            (ngModelChange)="searchQuery.set($event)">
+            (input)="onSearch()">
         </div>
-        <select 
-          class="form-select sort-select" 
-          [(ngModel)]="sortBy"
-          (ngModelChange)="sortBy.set($event)">
-          <option value="date-desc">Newest first</option>
-          <option value="date-asc">Oldest first</option>
-          <option value="name">By medication name</option>
-        </select>
       </div>
 
       <!-- LAYOUT -->
       <div class="row g-4">
         <!-- PRESCRIPTION LIST -->
-        <div class="col-12 col-lg-8">
+        <div class="col-12" [class.col-lg-8]="selectedPrescription()" [class.col-lg-12]="!selectedPrescription()">
           @if (filteredPrescriptions().length === 0) {
             <div class="card">
               <div class="card-body">
-                <div class="no-prescriptions text-center py-5">
-                  <div class="icon fs-1 mb-3">💊</div>
-                  <p class="text-muted">No prescriptions found.</p>
+                <div class="empty-state text-center py-5">
+                  <div class="empty-icon mb-3">💊</div>
+                  <p class="text-muted">No prescriptions found matching your search</p>
                 </div>
               </div>
             </div>
@@ -202,17 +205,21 @@
               @for (rx of filteredPrescriptions(); track rx.id) {
                 <div 
                   class="rx-card card"
-                  [class]="getStatusClass(rx.status) + (isExpired(rx) ? ' rx-expired' : '')"
-                  [class.selected]="selectedPrescriptionId() === rx.id"
-                  (click)="selectPrescription(rx.id)">
+                  [class.selected]="selectedPrescription()?.id === rx.id"
+                  (click)="selectPrescription(rx)">
                   <div class="card-body">
                     <!-- Header -->
                     <div class="rx-header d-flex align-items-start justify-content-between mb-3">
-                      <div>
-                        <div class="rx-name">💊 {{ rx.medicationName }}</div>
-                        <div class="rx-dosage small text-muted">{{ rx.dosage }}</div>
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="patient-avatar-small">
+                          {{ getPatientInitials(rx.patientName) }}
+                        </div>
+                        <div>
+                          <div class="rx-patient fw-semibold">{{ rx.patientName || 'Patient #' + rx.patientId }}</div>
+                          <div class="rx-name">💊 {{ rx.medicationName }}</div>
+                        </div>
                       </div>
-                      <span class="badge" [class]="getBadgeClass(rx.status)">
+                      <span class="badge" [class]="getStatusClass(rx.status)">
                         {{ rx.status }}
                       </span>
                     </div>
@@ -239,20 +246,6 @@
                     </div>
 
 
-
-                    <!-- Footer -->
-                    <div class="rx-footer d-flex align-items-center justify-content-between pt-3 border-top">
-                      <div class="d-flex align-items-center gap-2">
-                        <div class="doctor-avatar">{{ getDoctorInitials(rx) }}</div>
-                        <div>
-                          <div class="small fw-semibold">{{ rx.doctorName || 'Doctor ID: ' + rx.doctorId }}</div>
-                          @if (rx.doctorSpecialization) {
-                            <div class="small text-muted">{{ rx.doctorSpecialization }}</div>
-                          }
-                        </div>
-                      </div>
-                      <div class="small text-muted">📅 {{ formatDate(rx.prescribedDate) }}</div>
-                    </div>
                   </div>
                 </div>
               }
@@ -261,35 +254,41 @@
         </div>
 
         <!-- DETAIL PANEL -->
-        <div class="col-12 col-lg-4">
-          <div class="card detail-panel sticky-top" style="top: 80px;">
-            <div class="card-body">
-              <h6 class="card-title mb-3">💊 Prescription Details</h6>
-
-              @if (!selectedPrescription()) {
-                <div class="detail-empty text-center py-5">
-                  <div class="icon fs-1 mb-3">💊</div>
-                  <p class="text-muted small">Select a prescription to view details</p>
+        @if (selectedPrescription()) {
+          <div class="col-12 col-lg-4">
+            <div class="card detail-panel">
+              <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                  <h6 class="card-title mb-0">💊 Prescription Details</h6>
+                  <button class="btn-close" (click)="closeDetails()"></button>
                 </div>
-              } @else {
+
                 <div class="detail-content">
-                  <!-- Header -->
-                  <div class="d-flex align-items-center gap-3 mb-3">
-                    <div class="rx-icon-large">💊</div>
-                    <div>
-                      <div class="fw-bold">{{ selectedPrescription()!.medicationName }}</div>
-                      <span class="badge" [class]="getBadgeClass(selectedPrescription()!.status)">
-                        {{ selectedPrescription()!.status }}
-                      </span>
+                  <!-- Patient Info -->
+                  <div class="detail-section mb-4">
+                    <div class="d-flex align-items-center gap-3">
+                      <div class="patient-avatar-large">
+                        {{ getPatientInitials(selectedPrescription()!.patientName) }}
+                      </div>
+                      <div>
+                        <h6 class="mb-0">{{ selectedPrescription()!.patientName || 'Patient #' + selectedPrescription()!.patientId }}</h6>
+                      </div>
                     </div>
                   </div>
 
-                  <hr>
+                  <!-- Medication -->
+                  <div class="detail-section mb-4">
+                    <div class="detail-label">Medication</div>
+                    <div class="detail-value">{{ selectedPrescription()!.medicationName }}</div>
+                    <span class="badge mt-2" [class]="getStatusClass(selectedPrescription()!.status)">
+                      {{ selectedPrescription()!.status }}
+                    </span>
+                  </div>
 
-                  <!-- Details -->
-                  <div class="detail-section mb-3">
-                    <div class="detail-label">DOSAGE & FREQUENCY</div>
-                    <div class="detail-value">
+                  <!-- Dosage & Frequency -->
+                  <div class="detail-section mb-4">
+                    <div class="detail-label">Dosage & Frequency</div>
+                    <div class="detail-value-text">
                       {{ selectedPrescription()!.dosage }} — {{ selectedPrescription()!.frequency }}
                       @if (selectedPrescription()!.durationDays) {
                         for {{ selectedPrescription()!.durationDays }} days
@@ -297,75 +296,71 @@
                     </div>
                   </div>
 
-                  <div class="detail-section mb-3">
-                    <div class="detail-label">VALIDITY</div>
+                  <!-- Validity -->
+                  <div class="detail-section mb-4">
+                    <div class="detail-label">Validity Period</div>
                     <div class="detail-value">
-                      {{ formatDate(selectedPrescription()!.prescribedDate) }} → 
-                      {{ formatDate(selectedPrescription()!.validUntil) }}
-                      @if (selectedPrescription()!.status === 'ACTIVE' && !isExpired(selectedPrescription()!)) {
-                        <span class="text-success small">
-                          ({{ getDaysLeft(selectedPrescription()!.validUntil) }} days left)
-                        </span>
+                      <div>📅 {{ formatDate(selectedPrescription()!.prescribedDate) }}</div>
+                      <div>→ {{ formatDate(selectedPrescription()!.validUntil) }}</div>
+                      @if (selectedPrescription()!.status === 'ACTIVE') {
+                        <div class="text-success small mt-1">
+                          {{ getDaysUntilExpiry(selectedPrescription()!.validUntil) }} days remaining
+                        </div>
                       }
                     </div>
                   </div>
 
-                  <div class="detail-section mb-3">
-                    <div class="detail-label">PRESCRIBED BY</div>
-                    <div class="d-flex align-items-center gap-2">
-                      <div class="doctor-avatar">{{ getDoctorInitials(selectedPrescription()!) }}</div>
-                      <div>
-                        <div class="small fw-semibold">{{ selectedPrescription()!.doctorName || 'Doctor ID: ' + selectedPrescription()!.doctorId }}</div>
-                        @if (selectedPrescription()!.doctorSpecialization) {
-                          <div class="small text-muted">{{ selectedPrescription()!.doctorSpecialization }}</div>
-                        }
+                  <!-- Instructions -->
+                  @if (selectedPrescription()!.instructions) {
+                    <div class="detail-section mb-4">
+                      <div class="detail-label">Instructions</div>
+                      <div class="detail-value-text">
+                        {{ selectedPrescription()!.instructions }}
+                      </div>
+                    </div>
+                  }
+
+                  <!-- Notes -->
+                  @if (selectedPrescription()!.notes) {
+                    <div class="detail-section mb-4">
+                      <div class="detail-label">Notes</div>
+                      <div class="detail-value-text">
+                        {{ selectedPrescription()!.notes }}
+                      </div>
+                    </div>
+                  }
+
+
+
+                  <!-- Metadata -->
+                  <div class="detail-section">
+                    <div class="metadata">
+                      <div class="metadata-item">
+                        <small class="text-muted">Created: {{ formatDateTime(selectedPrescription()!.createdAt) }}</small>
+                      </div>
+                      <div class="metadata-item">
+                        <small class="text-muted">Updated: {{ formatDateTime(selectedPrescription()!.updatedAt) }}</small>
                       </div>
                     </div>
                   </div>
 
-                  @if (selectedPrescription()!.instructions) {
-                    <div class="detail-section mb-3">
-                      <div class="detail-label">INSTRUCTIONS</div>
-                      <div class="instructions-box p-3 rounded bg-light">
-                        <small>"{{ selectedPrescription()!.instructions }}"</small>
-                      </div>
-                    </div>
-                  }
-
-                  @if (selectedPrescription()!.notes) {
-                    <div class="detail-section mb-3">
-                      <div class="detail-label">NOTES</div>
-                      <div class="notes-box p-3 rounded bg-light">
-                        <small class="fst-italic">"{{ selectedPrescription()!.notes }}"</small>
-                      </div>
-                    </div>
-                  }
-
-                  <!-- Validity Bar -->
-                  @if (selectedPrescription()!.status === 'ACTIVE' && !isExpired(selectedPrescription()!)) {
-                    <div class="detail-section mb-3">
-                      <div class="detail-label">VALIDITY REMAINING</div>
-                      <div class="progress" style="height: 8px;">
-                        <div 
-                          class="progress-bar"
-                          [class]="getValidityColorClass(getValidityPercentage(selectedPrescription()!))"
-                          [style.width.%]="getValidityPercentage(selectedPrescription()!)">
-                        </div>
-                      </div>
-                    </div>
-                  }
-
-                  <hr>
-
                   <!-- Actions -->
-                  <button class="btn btn-primary w-100" (click)="downloadPrescription(selectedPrescription()!)">
-                    <span class="me-2">⬇</span> Download PDF
-                  </button>
+                  <div class="action-buttons mt-4">
+                    <button class="btn btn-primary w-100 mb-2">
+                      ✏️ Edit Prescription
+                    </button>
+                    <button class="btn btn-outline-primary w-100 mb-2">
+                      📋 View Medical Record
+                    </button>
+                    <button class="btn btn-outline-secondary w-100">
+                      📄 Download PDF
+                    </button>
+                  </div>
                 </div>
-              }
+              </div>
             </div>
           </div>
-        </div>
+        }
       </div>
     }
 

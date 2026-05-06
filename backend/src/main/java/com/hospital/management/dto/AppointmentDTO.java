@@ -45,4 +45,8 @@ public class AppointmentDTO {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    // Enriched fields for display
+    private String patientName;
+    private String doctorName;
 }

@@ -13,4 +13,7 @@ export interface Appointment {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  // Enriched fields from backend
+  patientName?: string;
+  doctorName?: string;
 }

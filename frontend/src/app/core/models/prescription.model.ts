@@ -4,8 +4,6 @@ export interface Prescription {
   id: number;
   patientId: number;
   doctorId: number;
-  doctorName?: string; // Optional: Doctor's full name
-  doctorSpecialization?: string; // Optional: Doctor's specialization
   medicalRecordId?: number;
   prescribedDate: string; // ISO datetime
   validUntil: string; // ISO date
@@ -18,4 +16,8 @@ export interface Prescription {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  // Enriched fields from backend
+  patientName?: string;
+  doctorName?: string;
+  doctorSpecialization?: string;
 }

@@ -12,12 +12,16 @@ public interface MedicalRecordMapper {
 
     @Mapping(source = "patient.id", target = "patientId")
     @Mapping(source = "doctor.id", target = "doctorId")
+    @Mapping(target = "patientName", ignore = true)
     @Mapping(target = "doctorName", ignore = true)
     @Mapping(target = "doctorSpecialization", ignore = true)
     MedicalRecordDTO toDTO(MedicalRecord medicalRecord);
 
     @AfterMapping
-    default void enrichDoctorInfo(MedicalRecord medicalRecord, @MappingTarget MedicalRecordDTO dto) {
+    default void enrichWithNames(MedicalRecord medicalRecord, @MappingTarget MedicalRecordDTO dto) {
+        if (medicalRecord.getPatient() != null) {
+            dto.setPatientName(medicalRecord.getPatient().getFirstName() + " " + medicalRecord.getPatient().getLastName());
+        }
         if (medicalRecord.getDoctor() != null) {
             dto.setDoctorName("Dr. " + medicalRecord.getDoctor().getFirstName() + " " + medicalRecord.getDoctor().getLastName());
             dto.setDoctorSpecialization(medicalRecord.getDoctor().getSpecialization());

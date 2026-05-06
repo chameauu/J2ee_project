@@ -1,0 +1,487 @@
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo d-flex align-items-center gap-2">
+    <div class="logo-icon d-flex align-items-center justify-content-center">🏥</div>
+    <div>
+      <div class="logo-text">MediCare</div>
+      <div class="logo-sub">Hospital System</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav flex-grow-1 py-3">
+    <div class="nav-section">Main</div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/schedule" routerLinkActive="active">
+      <span class="nav-icon">📅</span> My Schedule
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/patients" routerLinkActive="active">
+      <span class="nav-icon">👥</span> My Patients
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/medical-records" routerLinkActive="active">
+      <span class="nav-icon">📋</span> Medical Records
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/prescriptions" routerLinkActive="active">
+      <span class="nav-icon">💊</span> Prescriptions
+    </div>
+
+    <div class="nav-section">Account</div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">👤</span> My Profile
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">⚙️</span> Settings
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" (click)="logout()">
+      <span class="nav-icon">🚪</span> Logout
+    </div>
+  </nav>
+
+  <div class="sidebar-footer d-flex align-items-center gap-2">
+    <div class="avatar rounded-circle d-flex align-items-center justify-content-center">
+      {{ getInitials(doctorName()) }}
+    </div>
+    <div class="user-info">
+      <div class="name">{{ doctorName() }}</div>
+      <div class="role">Doctor</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar d-flex align-items-center justify-content-between px-4">
+    <div class="topbar-left">
+      <h1 class="h5 mb-0">Doctor Dashboard</h1>
+      <p class="text-muted small mb-0">{{ getCurrentDate() }}</p>
+    </div>
+    <div class="topbar-right d-flex align-items-center gap-3">
+      <button class="notif-btn d-flex align-items-center justify-content-center" title="Notifications">
+        🔔 <span class="notif-badge"></span>
+      </button>
+      <div class="hospital-badge">🏥 City Medical Center</div>
+    </div>
+  </div>
+
+  <div class="content p-4">
+
+    <!-- Loading State -->
+    @if (isLoading()) {
+      <div class="loading-state d-flex flex-column align-items-center justify-content-center py-5 text-center">
+        <div class="loading-icon mb-4">
+          <div class="pulse-ring"></div>
+          <div class="pulse-ring pulse-ring-delay-1"></div>
+          <div class="pulse-ring pulse-ring-delay-2"></div>
+          <div class="heartbeat">🏥</div>
+        </div>
+        <p class="h5 mb-2">Loading dashboard...</p>
+        <p class="text-muted">Fetching your data</p>
+      </div>
+    }
+
+    <!-- Error State -->
+    @if (errorMessage() && !isLoading()) {
+      <div class="error-state p-5 text-center">
+        <div class="error-icon mb-3">⚠️</div>
+        <h2 class="h4 mb-2">Unable to Load Dashboard</h2>
+        <p class="text-muted mb-4">{{ errorMessage() }}</p>
+        <button class="btn btn-primary" (click)="loadDashboardData()">
+          <span class="me-2">🔄</span>
+          Try Again
+        </button>
+      </div>
+    }
+
+    <!-- Content -->
+    @if (!isLoading() && !errorMessage()) {
+      <!-- HERO -->
+      <div class="hero-card mb-4">
+        <div class="hero-avatar">👨‍⚕️</div>
+        <div class="hero-content">
+          <h2 class="hero-title">Good morning, {{ doctorName() }}</h2>
+          <p class="hero-subtitle">Cardiology · License #MD-2024-00456 · 8 years experience</p>
+          <div class="hero-chips d-flex gap-2 flex-wrap mt-2">
+            <span class="chip">📅 {{ stats().todayAppointments }} appointments today</span>
+            <span class="chip">✅ {{ todayAppointments().filter(a => a.status === 'COMPLETED').length }} completed</span>
+            <span class="chip">👥 {{ stats().totalPatients }} unique patients</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="stat-icon stat-icon-blue">📅</div>
+              <div>
+                <div class="stat-val">{{ stats().todayAppointments }}</div>
+                <div class="stat-lbl">Today's Appointments</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="stat-icon stat-icon-orange">📋</div>
+              <div>
+                <div class="stat-val">{{ recentMedicalRecords().length }}</div>
+                <div class="stat-lbl">Medical Records</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-4">
+          <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="stat-icon stat-icon-purple">💊</div>
+              <div>
+                <div class="stat-val">{{ stats().activePrescriptions }}</div>
+                <div class="stat-lbl">Active Prescriptions</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 1: Today's Schedule + Quick Actions -->
+      <div class="row g-4 mb-4">
+        <!-- Today's Schedule -->
+        <div class="col-12 col-lg-6">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="card-title mb-0">📅 Today's Schedule</h5>
+                <a href="#" class="text-primary text-decoration-none small fw-semibold">Full Calendar →</a>
+              </div>
+              @if (todayAppointments().length > 0) {
+                <div class="appointments-list">
+                  @for (appt of todayAppointments(); track appt.id) {
+                    <div class="appointment-row d-flex align-items-center gap-3 py-2 border-bottom">
+                      <div class="appt-time">🕐 {{ formatTime(appt.appointmentDateTime) }}</div>
+                      <div class="flex-grow-1">
+                        <div class="appt-name fw-semibold">{{ appt.patientName || 'Patient #' + appt.patientId }}</div>
+                        <div class="appt-sub small text-muted">{{ appt.type }} · {{ appt.reason || 'No reason specified' }}</div>
+                      </div>
+                      <span class="badge" [ngClass]="getStatusBadgeClass(appt.status)">
+                        {{ appt.status }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="text-center text-muted py-4">No appointments scheduled for today</p>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="col-12 col-lg-6">
+          <div class="card">
+            <div class="card-body">
+              <h5 class="card-title mb-3">⚡ Quick Actions</h5>
+              <div class="row g-2">
+                <div class="col-6">
+                  <button class="quick-action-btn w-100" (click)="openNewRecordModal()">
+                    <div class="qa-icon">📝</div>
+                    <div class="qa-label">New Record</div>
+                  </button>
+                </div>
+                <div class="col-6">
+                  <button class="quick-action-btn w-100" (click)="openNewPrescriptionModal()">
+                    <div class="qa-icon">💊</div>
+                    <div class="qa-label">Prescribe</div>
+                  </button>
+                </div>
+                <div class="col-6">
+                  <button class="quick-action-btn w-100" routerLink="/doctor/patients">
+                    <div class="qa-icon">👥</div>
+                    <div class="qa-label">My Patients</div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ROW 2: Recent Patients + Recent Records + Active Prescriptions -->
+      <div class="row g-4 mb-4">
+        <!-- Upcoming Appointments -->
+        <div class="col-12 col-lg-4">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="card-title mb-0">📅 Upcoming</h5>
+                <a href="#" class="text-primary text-decoration-none small fw-semibold">View All →</a>
+              </div>
+              @if (upcomingAppointments().length > 0) {
+                <div class="list-group list-group-flush">
+                  @for (appt of upcomingAppointments(); track appt.id) {
+                    <div class="list-group-item px-0 py-2">
+                      <div class="d-flex align-items-center gap-2">
+                        <div class="patient-avatar">{{ getPatientInitials(appt.patientName) }}</div>
+                        <div class="flex-grow-1">
+                          <div class="small fw-semibold">{{ appt.patientName || 'Patient #' + appt.patientId }}</div>
+                          <div class="small text-muted">{{ formatDateTime(appt.appointmentDateTime) }}</div>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="text-center text-muted py-4">No upcoming appointments</p>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Recent Medical Records -->
+        <div class="col-12 col-lg-4">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="card-title mb-0">📋 Recent Records</h5>
+                <a href="#" class="text-primary text-decoration-none small fw-semibold">View All →</a>
+              </div>
+              @if (recentMedicalRecords().length > 0) {
+                <div class="records-list">
+                  @for (record of recentMedicalRecords(); track record.id) {
+                    <div class="record-row d-flex gap-2 py-2 border-bottom">
+                      <div class="record-line"></div>
+                      <div class="flex-grow-1">
+                        <div class="small fw-semibold">{{ record.chiefComplaint }}</div>
+                        <div class="small text-muted">{{ record.diagnosis }}</div>
+                        <div class="small text-muted">👤 {{ record.patientName || 'Patient #' + record.patientId }} · 📅 {{ formatDate(record.visitDate) }}</div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="text-center text-muted py-4">No recent records</p>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Active Prescriptions -->
+        <div class="col-12 col-lg-4">
+          <div class="card">
+            <div class="card-body">
+              <div class="d-flex align-items-center justify-content-between mb-3">
+                <h5 class="card-title mb-0">💊 My Prescriptions</h5>
+                <a href="#" class="text-primary text-decoration-none small fw-semibold">View All →</a>
+              </div>
+              @if (prescriptions().length > 0) {
+                <div class="prescriptions-list">
+                  @for (rx of prescriptions().slice(0, 5); track rx.id) {
+                    <div class="prescription-row d-flex align-items-center gap-2 py-2 border-bottom">
+                      <div class="rx-icon">💊</div>
+                      <div class="flex-grow-1">
+                        <div class="small fw-semibold">{{ rx.medicationName }}</div>
+                        <div class="small text-muted">👤 {{ rx.patientName || 'Patient #' + rx.patientId }} · {{ rx.dosage }}</div>
+                      </div>
+                      <span class="small fw-bold" [class.text-success]="rx.status === 'ACTIVE'" [class.text-danger]="rx.status === 'EXPIRED'">
+                        {{ rx.status }}
+                      </span>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <p class="text-center text-muted py-4">No prescriptions</p>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+
+    }
+
+  </div><!-- /content -->
+</div><!-- /main -->
+
+<!-- NEW MEDICAL RECORD MODAL -->
+@if (showNewRecordModal()) {
+  <div class="modal-backdrop" (click)="closeNewRecordModal()"></div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">📝 Create New Medical Record</h5>
+        <button type="button" class="btn-close" (click)="closeNewRecordModal()"></button>
+      </div>
+      <div class="modal-body">
+        @if (submitError()) {
+          <div class="alert alert-danger">{{ submitError() }}</div>
+        }
+        <form>
+          <div class="mb-3">
+            <label class="form-label">Patient <span class="text-danger">*</span></label>
+            <select class="form-select" [(ngModel)]="newRecord.patientId" name="patientId" required>
+              <option [value]="0">Select a patient</option>
+              @for (patient of patients(); track patient.id) {
+                <option [value]="patient.id">
+                  @if (patient.firstName && patient.lastName) {
+                    {{ patient.firstName }} {{ patient.lastName }}
+                  } @else {
+                    Patient #{{ patient.id }}
+                  }
+                  ({{ patient.email }})
+                </option>
+              }
+            </select>
+            @if (patients().length === 0) {
+              <small class="text-muted">No patients available. Please add patients first.</small>
+            }
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Visit Date & Time <span class="text-danger">*</span></label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="newRecord.visitDate" name="visitDate" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Chief Complaint <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="newRecord.chiefComplaint" name="chiefComplaint" 
+                   placeholder="e.g., Chest pain, Headache" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Diagnosis <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="newRecord.diagnosis" name="diagnosis" 
+                   placeholder="e.g., Hypertension, Migraine" required>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Treatment <span class="text-danger">*</span></label>
+            <textarea class="form-control" [(ngModel)]="newRecord.treatment" name="treatment" rows="3" 
+                      placeholder="Describe the treatment plan" required></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Vital Signs</label>
+            <input type="text" class="form-control" [(ngModel)]="newRecord.vitalSigns" name="vitalSigns" 
+                   placeholder="e.g., BP: 120/80, HR: 72, Temp: 98.6°F">
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" [(ngModel)]="newRecord.notes" name="notes" rows="3" 
+                      placeholder="Additional notes or observations"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeNewRecordModal()" [disabled]="isSubmitting()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" (click)="submitNewRecord()" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Creating...
+          } @else {
+            Create Record
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- NEW PRESCRIPTION MODAL -->
+@if (showNewPrescriptionModal()) {
+  <div class="modal-backdrop" (click)="closeNewPrescriptionModal()"></div>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">💊 Create New Prescription</h5>
+        <button type="button" class="btn-close" (click)="closeNewPrescriptionModal()"></button>
+      </div>
+      <div class="modal-body">
+        @if (submitError()) {
+          <div class="alert alert-danger">{{ submitError() }}</div>
+        }
+        <form>
+          <div class="mb-3">
+            <label class="form-label">Patient <span class="text-danger">*</span></label>
+            <select class="form-select" [(ngModel)]="newPrescription.patientId" name="patientId" required>
+              <option [value]="0">Select a patient</option>
+              @for (patient of patients(); track patient.id) {
+                <option [value]="patient.id">
+                  @if (patient.firstName && patient.lastName) {
+                    {{ patient.firstName }} {{ patient.lastName }}
+                  } @else {
+                    Patient #{{ patient.id }}
+                  }
+                  ({{ patient.email }})
+                </option>
+              }
+            </select>
+            @if (patients().length === 0) {
+              <small class="text-muted">No patients available. Please add patients first.</small>
+            }
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Medication Name <span class="text-danger">*</span></label>
+            <input type="text" class="form-control" [(ngModel)]="newPrescription.medicationName" name="medicationName" 
+                   placeholder="e.g., Amoxicillin, Lisinopril" required>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Dosage <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" [(ngModel)]="newPrescription.dosage" name="dosage" 
+                     placeholder="e.g., 500mg, 10mg" required>
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Frequency <span class="text-danger">*</span></label>
+              <input type="text" class="form-control" [(ngModel)]="newPrescription.frequency" name="frequency" 
+                     placeholder="e.g., Twice daily, Once daily" required>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Duration (Days)</label>
+              <input type="number" class="form-control" [(ngModel)]="newPrescription.durationDays" name="durationDays" 
+                     placeholder="e.g., 7, 30">
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Valid Until <span class="text-danger">*</span></label>
+              <input type="date" class="form-control" [(ngModel)]="newPrescription.validUntil" name="validUntil" required>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Instructions</label>
+            <textarea class="form-control" [(ngModel)]="newPrescription.instructions" name="instructions" rows="2" 
+                      placeholder="e.g., Take with food, Avoid alcohol"></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <textarea class="form-control" [(ngModel)]="newPrescription.notes" name="notes" rows="2" 
+                      placeholder="Additional notes"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" (click)="closeNewPrescriptionModal()" [disabled]="isSubmitting()">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" (click)="submitNewPrescription()" [disabled]="isSubmitting()">
+          @if (isSubmitting()) {
+            <span class="spinner-border spinner-border-sm me-2"></span>
+            Creating...
+          } @else {
+            Create Prescription
+          }
+        </button>
+      </div>
+    </div>
+  </div>
+}

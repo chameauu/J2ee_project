@@ -13,12 +13,16 @@ public interface PrescriptionMapper {
     @Mapping(source = "patient.id", target = "patientId")
     @Mapping(source = "doctor.id", target = "doctorId")
     @Mapping(source = "medicalRecord.id", target = "medicalRecordId")
+    @Mapping(target = "patientName", ignore = true)
     @Mapping(target = "doctorName", ignore = true)
     @Mapping(target = "doctorSpecialization", ignore = true)
     PrescriptionDTO toDTO(Prescription prescription);
 
     @AfterMapping
-    default void enrichDoctorInfo(Prescription prescription, @MappingTarget PrescriptionDTO dto) {
+    default void enrichWithNames(Prescription prescription, @MappingTarget PrescriptionDTO dto) {
+        if (prescription.getPatient() != null) {
+            dto.setPatientName(prescription.getPatient().getFirstName() + " " + prescription.getPatient().getLastName());
+        }
         if (prescription.getDoctor() != null) {
             dto.setDoctorName("Dr. " + prescription.getDoctor().getFirstName() + " " + prescription.getDoctor().getLastName());
             dto.setDoctorSpecialization(prescription.getDoctor().getSpecialization());

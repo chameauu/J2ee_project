@@ -21,7 +21,8 @@ public class MedicalRecordDTO {
     @NotNull(message = "Doctor ID is required")
     private Long doctorId;
 
-    // Read-only fields for doctor information
+    // Read-only fields for patient and doctor information
+    private String patientName;
     private String doctorName;
     private String doctorSpecialization;
 

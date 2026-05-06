@@ -1,0 +1,264 @@
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo d-flex align-items-center gap-2">
+    <div class="logo-icon d-flex align-items-center justify-content-center">🏥</div>
+    <div>
+      <div class="logo-text">MediCare</div>
+      <div class="logo-sub">Hospital System</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav flex-grow-1 py-3">
+    <div class="nav-section">Main</div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/schedule" routerLinkActive="active">
+      <span class="nav-icon">📅</span> My Schedule
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/patients" routerLinkActive="active">
+      <span class="nav-icon">👥</span> My Patients
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/medical-records" routerLinkActive="active">
+      <span class="nav-icon">📋</span> Medical Records
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/prescriptions" routerLinkActive="active">
+      <span class="nav-icon">💊</span> Prescriptions
+    </div>
+
+    <div class="nav-section">Account</div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">👤</span> My Profile
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">⚙️</span> Settings
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" (click)="logout()">
+      <span class="nav-icon">🚪</span> Logout
+    </div>
+  </nav>
+
+  <div class="sidebar-footer d-flex align-items-center gap-2">
+    <div class="avatar rounded-circle d-flex align-items-center justify-content-center">
+      {{ getInitials(doctorName()) }}
+    </div>
+    <div class="user-info">
+      <div class="name">{{ doctorName() }}</div>
+      <div class="role">Doctor</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar d-flex align-items-center justify-content-between px-4">
+    <div class="topbar-left">
+      <h1 class="h5 mb-0">My Schedule</h1>
+      <p class="text-muted small mb-0">{{ getCurrentDate() }}</p>
+    </div>
+    <div class="topbar-right d-flex align-items-center gap-3">
+      <button class="notif-btn d-flex align-items-center justify-content-center" title="Notifications">
+        🔔 <span class="notif-badge"></span>
+      </button>
+      <div class="hospital-badge">🏥 City Medical Center</div>
+    </div>
+  </div>
+
+  <div class="content p-4">
+
+    <!-- Loading State -->
+    @if (isLoading()) {
+      <div class="loading-state d-flex flex-column align-items-center justify-content-center py-5 text-center">
+        <div class="loading-icon mb-4">
+          <div class="pulse-ring"></div>
+          <div class="pulse-ring pulse-ring-delay-1"></div>
+          <div class="pulse-ring pulse-ring-delay-2"></div>
+          <div class="heartbeat">📅</div>
+        </div>
+        <p class="h5 mb-2">Loading your schedule...</p>
+        <p class="text-muted">Fetching your appointments</p>
+      </div>
+    }
+
+    <!-- Error State -->
+    @if (errorMessage() && !isLoading()) {
+      <div class="error-state p-5 text-center">
+        <div class="error-icon mb-3">⚠️</div>
+        <h2 class="h4 mb-2">Unable to Load Schedule</h2>
+        <p class="text-muted mb-4">{{ errorMessage() }}</p>
+        <button class="btn btn-primary" (click)="loadAppointments()">
+          <span class="me-2">🔄</span>
+          Try Again
+        </button>
+      </div>
+    }
+
+    <!-- Content -->
+    @if (!isLoading() && !errorMessage()) {
+      <!-- MINI STATS -->
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+          <div class="card mini-stat text-center">
+            <div class="card-body">
+              <div class="stat-val text-primary">{{ stats().upcoming }}</div>
+              <div class="stat-lbl text-muted small">Upcoming</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="card mini-stat text-center">
+            <div class="card-body">
+              <div class="stat-val text-success">{{ stats().completed }}</div>
+              <div class="stat-lbl text-muted small">Completed</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="card mini-stat text-center">
+            <div class="card-body">
+              <div class="stat-val text-danger">{{ stats().cancelled }}</div>
+              <div class="stat-lbl text-muted small">Cancelled</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CALENDAR + PANEL -->
+      <div class="row g-4">
+        <!-- CALENDAR -->
+        <div class="col-12 col-lg-8">
+          <div class="card">
+            <div class="card-body p-4">
+              <!-- Calendar Header -->
+              <div class="cal-header d-flex align-items-center justify-content-between mb-4">
+                <div class="cal-month">{{ calendarTitle() }}</div>
+                <div class="cal-nav d-flex gap-2">
+                  <button class="btn btn-sm btn-outline-secondary" (click)="previousMonth()">‹</button>
+                  <button class="btn btn-sm btn-outline-secondary px-3" (click)="goToToday()">Today</button>
+                  <button class="btn btn-sm btn-outline-secondary" (click)="nextMonth()">›</button>
+                </div>
+              </div>
+
+              <!-- Weekday Labels -->
+              <div class="cal-weekdays row g-1 mb-3">
+                <div class="col text-center"><small class="text-muted fw-semibold">SUN</small></div>
+                <div class="col text-center"><small class="text-muted fw-semibold">MON</small></div>
+                <div class="col text-center"><small class="text-muted fw-semibold">TUE</small></div>
+                <div class="col text-center"><small class="text-muted fw-semibold">WED</small></div>
+                <div class="col text-center"><small class="text-muted fw-semibold">THU</small></div>
+                <div class="col text-center"><small class="text-muted fw-semibold">FRI</small></div>
+                <div class="col text-center"><small class="text-muted fw-semibold">SAT</small></div>
+              </div>
+
+              <!-- Calendar Grid -->
+              <div class="cal-grid row g-2">
+                @for (day of calendarDays(); track day.dateKey || $index) {
+                  <div class="col">
+                    <div 
+                      class="cal-day p-3 rounded"
+                      [class.empty]="day.isEmpty"
+                      [class.today]="day.isToday"
+                      [class.selected]="day.isSelected"
+                      [class.has-appt]="day.appointments.length > 0"
+                      (click)="selectDay(day)">
+                      @if (!day.isEmpty) {
+                        <div class="day-num fw-semibold mb-2">{{ day.date }}</div>
+                        @if (day.appointments.length > 0) {
+                          <div class="day-dots d-flex flex-wrap gap-1 mb-2">
+                            @for (appt of day.appointments.slice(0, 3); track appt.id) {
+                              <span class="dot" [class]="'dot-' + appt.status.toLowerCase()"></span>
+                            }
+                          </div>
+                          <div class="day-mini small text-muted">
+                            @if (day.appointments.length === 1) {
+                              {{ day.appointments[0].patientName || 'Patient' }}
+                            } @else {
+                              {{ day.appointments.length }} appointments
+                            }
+                          </div>
+                        }
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Legend -->
+              <div class="legend d-flex gap-4 mt-4 pt-4 border-top">
+                <div class="legend-item d-flex align-items-center gap-2">
+                  <span class="dot dot-scheduled"></span>
+                  <small class="text-muted">Scheduled</small>
+                </div>
+                <div class="legend-item d-flex align-items-center gap-2">
+                  <span class="dot dot-completed"></span>
+                  <small class="text-muted">Completed</small>
+                </div>
+                <div class="legend-item d-flex align-items-center gap-2">
+                  <span class="dot dot-cancelled"></span>
+                  <small class="text-muted">Cancelled</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- DETAIL PANEL -->
+        <div class="col-12 col-lg-4">
+          <div class="card">
+            <div class="card-body">
+              <div class="panel-header mb-3">
+                <div class="panel-date fw-bold">{{ selectedDateDisplay() }}</div>
+                <div class="panel-sub small text-muted">
+                  @if (selectedDateKey()) {
+                    {{ selectedDayAppointments().length }} appointment{{ selectedDayAppointments().length !== 1 ? 's' : '' }}
+                  } @else {
+                    Click on any date to view appointments
+                  }
+                </div>
+              </div>
+
+              <div class="panel-list">
+                @if (!selectedDateKey()) {
+                  <div class="no-appt text-center py-4">
+                    <div class="icon fs-1 mb-2">📅</div>
+                    <p class="text-muted small mb-0">No date selected</p>
+                  </div>
+                } @else if (selectedDayAppointments().length === 0) {
+                  <div class="no-appt text-center py-4">
+                    <div class="icon fs-1 mb-2">🗓️</div>
+                    <p class="text-muted small mb-0">No appointments on this day</p>
+                  </div>
+                } @else {
+                  @for (appt of selectedDayAppointments(); track appt.id) {
+                    <div class="appt-card mb-3 p-3 rounded" [class]="getCardClass(appt.status)">
+                      <div class="appt-time-badge badge mb-2">
+                        🕐 {{ formatTime(appt.appointmentDateTime) }}
+                      </div>
+                      <div class="appt-doc fw-semibold">{{ appt.patientName || 'Patient #' + appt.patientId }}</div>
+                      <div class="appt-spec small text-muted">{{ formatType(appt.type) }}</div>
+                      @if (appt.reason) {
+                        <div class="appt-loc small text-muted mt-2">
+                          📍 {{ appt.reason }}
+                        </div>
+                      }
+                      @if (appt.notes) {
+                        <div class="appt-loc small text-muted">
+                          💬 {{ appt.notes }}
+                        </div>
+                      }
+                      <span class="badge mt-2" [class]="getStatusClass(appt.status)">
+                        {{ appt.status }}
+                      </span>
+                    </div>
+                  }
+                }
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+
+  </div><!-- /content -->
+</div><!-- /main -->

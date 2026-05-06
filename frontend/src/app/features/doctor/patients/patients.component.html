@@ -1,0 +1,305 @@
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo d-flex align-items-center gap-2">
+    <div class="logo-icon d-flex align-items-center justify-content-center">🏥</div>
+    <div>
+      <div class="logo-text">MediCare</div>
+      <div class="logo-sub">Hospital System</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav flex-grow-1 py-3">
+    <div class="nav-section">Main</div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/dashboard" routerLinkActive="active" [routerLinkActiveOptions]="{exact: true}">
+      <span class="nav-icon">📊</span> Dashboard
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/schedule" routerLinkActive="active">
+      <span class="nav-icon">📅</span> My Schedule
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/patients" routerLinkActive="active">
+      <span class="nav-icon">👥</span> My Patients
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/medical-records" routerLinkActive="active">
+      <span class="nav-icon">📋</span> Medical Records
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" routerLink="/doctor/prescriptions" routerLinkActive="active">
+      <span class="nav-icon">💊</span> Prescriptions
+    </div>
+
+    <div class="nav-section">Account</div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">👤</span> My Profile
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3">
+      <span class="nav-icon">⚙️</span> Settings
+    </div>
+    <div class="nav-item d-flex align-items-center gap-3" (click)="logout()">
+      <span class="nav-icon">🚪</span> Logout
+    </div>
+  </nav>
+
+  <div class="sidebar-footer d-flex align-items-center gap-2">
+    <div class="avatar rounded-circle d-flex align-items-center justify-content-center">
+      {{ getInitials(doctorName()) }}
+    </div>
+    <div class="user-info">
+      <div class="name">{{ doctorName() }}</div>
+      <div class="role">Doctor</div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- TOPBAR -->
+  <div class="topbar d-flex align-items-center justify-content-between px-4">
+    <div class="topbar-left">
+      <h1 class="h5 mb-0">My Patients</h1>
+      <p class="text-muted small mb-0">{{ getCurrentDate() }}</p>
+    </div>
+    <div class="topbar-right d-flex align-items-center gap-3">
+      <button class="notif-btn d-flex align-items-center justify-content-center" title="Notifications">
+        🔔 <span class="notif-badge"></span>
+      </button>
+      <div class="hospital-badge">🏥 City Medical Center</div>
+    </div>
+  </div>
+
+  <div class="content p-4">
+
+    <!-- Loading State -->
+    @if (isLoading()) {
+      <div class="loading-state d-flex flex-column align-items-center justify-content-center py-5 text-center">
+        <div class="loading-icon mb-4">
+          <div class="pulse-ring"></div>
+          <div class="pulse-ring pulse-ring-delay-1"></div>
+          <div class="pulse-ring pulse-ring-delay-2"></div>
+          <div class="heartbeat">👥</div>
+        </div>
+        <p class="h5 mb-2">Loading patients...</p>
+        <p class="text-muted">Fetching patient list</p>
+      </div>
+    }
+
+    <!-- Error State -->
+    @if (errorMessage() && !isLoading()) {
+      <div class="error-state p-5 text-center">
+        <div class="error-icon mb-3">⚠️</div>
+        <h2 class="h4 mb-2">Unable to Load Patients</h2>
+        <p class="text-muted mb-4">{{ errorMessage() }}</p>
+        <button class="btn btn-primary" (click)="loadPatients()">
+          <span class="me-2">🔄</span>
+          Try Again
+        </button>
+      </div>
+    }
+
+    <!-- Content -->
+    @if (!isLoading() && !errorMessage()) {
+      <!-- Stats Row -->
+      <div class="row g-3 mb-4">
+        <div class="col-12 col-md-4">
+          <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="stat-icon stat-icon-blue">👥</div>
+              <div>
+                <div class="stat-val">{{ stats().total }}</div>
+                <div class="stat-lbl">Total Patients</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="stat-icon stat-icon-blue-light">👨</div>
+              <div>
+                <div class="stat-val">{{ stats().male }}</div>
+                <div class="stat-lbl">Male Patients</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-12 col-md-4">
+          <div class="card stat-card">
+            <div class="card-body d-flex align-items-center gap-3">
+              <div class="stat-icon stat-icon-pink">👩</div>
+              <div>
+                <div class="stat-val">{{ stats().female }}</div>
+                <div class="stat-lbl">Female Patients</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search and List -->
+      <div class="row g-4">
+        <!-- Patient List -->
+        <div class="col-12" [class.col-lg-7]="selectedPatient()" [class.col-lg-12]="!selectedPatient()">
+          <div class="card">
+            <div class="card-body">
+              <!-- Search Bar -->
+              <div class="search-bar mb-4">
+                <div class="input-group">
+                  <span class="input-group-text bg-white border-end-0">
+                    <span class="search-icon">🔍</span>
+                  </span>
+                  <input 
+                    type="text" 
+                    class="form-control border-start-0 ps-0" 
+                    placeholder="Search by name, email, phone, or blood type..."
+                    [(ngModel)]="searchQuery"
+                    (input)="onSearch()">
+                </div>
+              </div>
+
+              <!-- Patient Cards -->
+              @if (filteredPatients().length > 0) {
+                <div class="patients-grid">
+                  @for (patient of filteredPatients(); track patient.id) {
+                    <div 
+                      class="patient-card p-3 rounded"
+                      [class.selected]="selectedPatient()?.id === patient.id"
+                      (click)="selectPatient(patient)">
+                      <div class="d-flex align-items-start gap-3">
+                        <div class="patient-avatar">
+                          {{ getPatientInitials(patient) }}
+                        </div>
+                        <div class="flex-grow-1">
+                          <div class="patient-name fw-semibold">
+                            {{ patient.firstName }} {{ patient.lastName }}
+                          </div>
+                          <div class="patient-info small text-muted mt-1">
+                            <div>📧 {{ patient.email }}</div>
+                            <div>📱 {{ patient.phone }}</div>
+                            <div class="d-flex gap-3 mt-2">
+                              <span class="badge bg-light text-dark">
+                                {{ patient.gender === 'MALE' ? '👨 Male' : '👩 Female' }}
+                              </span>
+                              <span class="badge bg-light text-dark">
+                                🎂 {{ calculateAge(patient.dateOfBirth) }} years
+                              </span>
+                              @if (patient.bloodType) {
+                                <span class="badge bg-danger-subtle text-danger">
+                                  🩸 {{ patient.bloodType }}
+                                </span>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                        <div class="patient-arrow">›</div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                <div class="empty-state text-center py-5">
+                  <div class="empty-icon mb-3">🔍</div>
+                  <p class="text-muted mb-0">No patients found matching your search</p>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Patient Details Panel -->
+        @if (selectedPatient()) {
+          <div class="col-12 col-lg-5">
+            <div class="card details-panel">
+              <div class="card-body">
+                <div class="d-flex align-items-center justify-content-between mb-4">
+                  <h5 class="card-title mb-0">Patient Details</h5>
+                  <button class="btn-close" (click)="closeDetails()"></button>
+                </div>
+
+                <div class="patient-details">
+                  <!-- Avatar and Name -->
+                  <div class="text-center mb-4">
+                    <div class="patient-avatar-large mx-auto mb-3">
+                      {{ getPatientInitials(selectedPatient()!) }}
+                    </div>
+                    <h4 class="mb-1">{{ selectedPatient()!.firstName }} {{ selectedPatient()!.lastName }}</h4>
+                    <p class="text-muted small mb-0">Patient ID: #{{ selectedPatient()!.id }}</p>
+                  </div>
+
+                  <!-- Details Grid -->
+                  <div class="details-grid">
+                    <div class="detail-item">
+                      <div class="detail-label">Email</div>
+                      <div class="detail-value">📧 {{ selectedPatient()!.email }}</div>
+                    </div>
+
+                    <div class="detail-item">
+                      <div class="detail-label">Phone</div>
+                      <div class="detail-value">📱 {{ selectedPatient()!.phone }}</div>
+                    </div>
+
+                    <div class="detail-item">
+                      <div class="detail-label">Date of Birth</div>
+                      <div class="detail-value">🎂 {{ formatDate(selectedPatient()!.dateOfBirth) }}</div>
+                    </div>
+
+                    <div class="detail-item">
+                      <div class="detail-label">Age</div>
+                      <div class="detail-value">{{ calculateAge(selectedPatient()!.dateOfBirth) }} years</div>
+                    </div>
+
+                    <div class="detail-item">
+                      <div class="detail-label">Gender</div>
+                      <div class="detail-value">
+                        {{ selectedPatient()!.gender === 'MALE' ? '👨 Male' : '👩 Female' }}
+                      </div>
+                    </div>
+
+                    @if (selectedPatient()!.bloodType) {
+                      <div class="detail-item">
+                        <div class="detail-label">Blood Type</div>
+                        <div class="detail-value">🩸 {{ selectedPatient()!.bloodType }}</div>
+                      </div>
+                    }
+
+                    @if (selectedPatient()!.address) {
+                      <div class="detail-item full-width">
+                        <div class="detail-label">Address</div>
+                        <div class="detail-value">📍 {{ selectedPatient()!.address }}</div>
+                      </div>
+                    }
+
+                    @if (selectedPatient()!.emergencyContact) {
+                      <div class="detail-item full-width">
+                        <div class="detail-label">Emergency Contact</div>
+                        <div class="detail-value">🚨 {{ selectedPatient()!.emergencyContact }}</div>
+                      </div>
+                    }
+
+                    @if (selectedPatient()!.insuranceNumber) {
+                      <div class="detail-item full-width">
+                        <div class="detail-label">Insurance Number</div>
+                        <div class="detail-value">🏥 {{ selectedPatient()!.insuranceNumber }}</div>
+                      </div>
+                    }
+                  </div>
+
+                  <!-- Action Buttons -->
+                  <div class="action-buttons mt-4">
+                    <button class="btn btn-primary w-100 mb-2">
+                      📋 View Medical Records
+                    </button>
+                    <button class="btn btn-outline-primary w-100 mb-2">
+                      📅 View Appointments
+                    </button>
+                    <button class="btn btn-outline-primary w-100">
+                      💊 View Prescriptions
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+  </div><!-- /content -->
+</div><!-- /main -->
