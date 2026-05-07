@@ -2,12 +2,9 @@ package com.hospital.management.services;
 
 import com.hospital.management.dto.LoginRequest;
 import com.hospital.management.dto.LoginResponse;
+import com.hospital.management.entities.User;
 import com.hospital.management.exceptions.UnauthorizedException;
-import com.hospital.management.repositories.AdministratorRepository;
-import com.hospital.management.repositories.DoctorRepository;
-import com.hospital.management.repositories.HospitalDirectorRepository;
-import com.hospital.management.repositories.PatientRepository;
-import com.hospital.management.repositories.PharmacistRepository;
+import com.hospital.management.repositories.UserRepository;
 import com.hospital.management.security.JwtTokenProvider;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,11 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Transactional
 public class AuthServiceImpl implements IAuthService {
 
-    private final PatientRepository patientRepository;
-    private final DoctorRepository doctorRepository;
-    private final PharmacistRepository pharmacistRepository;
-    private final AdministratorRepository administratorRepository;
-    private final HospitalDirectorRepository hospitalDirectorRepository;
+    private final UserRepository userRepository;
     private final JwtTokenProvider jwtTokenProvider;
 
     @Override
@@ -30,57 +23,22 @@ public class AuthServiceImpl implements IAuthService {
         String email = loginRequest.getEmail();
         String password = loginRequest.getPassword();
 
-        // For demo purposes, we'll use a simple password check
-        // In production, this should use BCrypt password hashing
+        // For demo/development purposes, accept any password
+        // In production, this should use BCrypt password hashing and verify against stored password
         
-        // Check if user exists in any repository
-        if (administratorRepository.existsByEmail(email)) {
-            // Simple demo password: "admin123"
-            if ("admin123".equals(password)) {
-                Long userId = administratorRepository.findByEmail(email)
-                    .orElseThrow(() -> new UnauthorizedException("User not found"))
-                    .getId();
-                String token = jwtTokenProvider.generateToken(email, "ADMIN");
-                return new LoginResponse(token, userId, email, "ADMIN");
-            }
-        } else if (hospitalDirectorRepository.existsByEmail(email)) {
-            // Simple demo password: "director123"
-            if ("director123".equals(password)) {
-                Long userId = hospitalDirectorRepository.findByEmail(email)
-                    .orElseThrow(() -> new UnauthorizedException("User not found"))
-                    .getId();
-                String token = jwtTokenProvider.generateToken(email, "DIRECTOR");
-                return new LoginResponse(token, userId, email, "DIRECTOR");
-            }
-        } else if (doctorRepository.existsByEmail(email)) {
-            // Simple demo password: "doctor123"
-            if ("doctor123".equals(password)) {
-                Long userId = doctorRepository.findByEmail(email)
-                    .orElseThrow(() -> new UnauthorizedException("User not found"))
-                    .getId();
-                String token = jwtTokenProvider.generateToken(email, "DOCTOR");
-                return new LoginResponse(token, userId, email, "DOCTOR");
-            }
-        } else if (pharmacistRepository.existsByEmail(email)) {
-            // Simple demo password: "pharmacist123"
-            if ("pharmacist123".equals(password)) {
-                Long userId = pharmacistRepository.findByEmail(email)
-                    .orElseThrow(() -> new UnauthorizedException("User not found"))
-                    .getId();
-                String token = jwtTokenProvider.generateToken(email, "PHARMACIST");
-                return new LoginResponse(token, userId, email, "PHARMACIST");
-            }
-        } else if (patientRepository.existsByEmail(email)) {
-            // Simple demo password: "patient123"
-            if ("patient123".equals(password)) {
-                Long userId = patientRepository.findByEmail(email)
-                    .orElseThrow(() -> new UnauthorizedException("User not found"))
-                    .getId();
-                String token = jwtTokenProvider.generateToken(email, "PATIENT");
-                return new LoginResponse(token, userId, email, "PATIENT");
-            }
+        // Find user by email
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UnauthorizedException("Invalid email or password"));
+
+        // Check if user is active
+        if (!user.getActive()) {
+            throw new UnauthorizedException("User account is inactive");
         }
 
-        throw new UnauthorizedException("Invalid email or password");
+        // Generate JWT token with user's role
+        String token = jwtTokenProvider.generateToken(email, user.getRole().name());
+        
+        // Return login response
+        return new LoginResponse(token, user.getId(), email, user.getRole().name());
     }
 }
