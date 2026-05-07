@@ -118,7 +118,6 @@
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between mb-2">
               <div class="kpi-icon kpi-icon-blue">👨‍⚕️</div>
-              <span class="trend-up">↑ 2 this month</span>
             </div>
             <div class="kpi-val">{{ dashboardData()!.totalDoctors }}</div>
             <div class="kpi-lbl">Total Doctors</div>
@@ -132,7 +131,6 @@
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between mb-2">
               <div class="kpi-icon kpi-icon-teal">🧑‍🤝‍🧑</div>
-              <span class="trend-up">↑ 18 this month</span>
             </div>
             <div class="kpi-val">{{ dashboardData()!.totalPatients }}</div>
             <div class="kpi-lbl">Total Patients</div>
@@ -146,7 +144,6 @@
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between mb-2">
               <div class="kpi-icon kpi-icon-purple">�</div>
-              <span class="trend-down">↓ 3% vs last month</span>
             </div>
             <div class="kpi-val">{{ dashboardData()!.totalAppointments }}</div>
             <div class="kpi-lbl">Total Appointments</div>
@@ -160,7 +157,6 @@
           <div class="card-body">
             <div class="d-flex align-items-center justify-content-between mb-2">
               <div class="kpi-icon kpi-icon-green">�</div>
-              <span class="trend-up">↑ 32 this month</span>
             </div>
             <div class="kpi-val">{{ dashboardData()!.totalMedicalRecords }}</div>
             <div class="kpi-lbl">Medical Records</div>
@@ -168,31 +164,7 @@
         </div>
       </div>
 
-      <div class="col-12 col-sm-6 col-lg-3">
-        <div class="card kpi-card">
-          <div class="card-body">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <div class="kpi-icon kpi-icon-teal">✅</div>
-              <span class="trend-up">↑ 4% vs last month</span>
-            </div>
-            <div class="kpi-val">{{ dashboardData()!.appointmentCompletionRate.toFixed(0) }}<small>%</small></div>
-            <div class="kpi-lbl">Completion Rate</div>
-          </div>
-        </div>
-      </div>
 
-      <div class="col-12 col-sm-6 col-lg-3">
-        <div class="card kpi-card">
-          <div class="card-body">
-            <div class="d-flex align-items-center justify-content-between mb-2">
-              <div class="kpi-icon kpi-icon-purple">�</div>
-              <span class="trend-up">↑ 7% vs last month</span>
-            </div>
-            <div class="kpi-val">{{ dashboardData()!.doctorUtilizationRate.toFixed(0) }}<small>%</small></div>
-            <div class="kpi-lbl">Doctor Utilization</div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- ROW 1: Status Breakdown -->
@@ -248,7 +220,6 @@
                 <th>Patients</th>
                 <th>Appointments</th>
                 <th>Completed</th>
-                <th>Completion Rate</th>
                 <th>Records</th>
                 <th>Today</th>
                 <th>Status</th>
@@ -272,16 +243,6 @@
                   <td><b>{{ doctor.totalPatients }}</b></td>
                   <td>{{ doctor.totalAppointments }}</td>
                   <td class="text-success">{{ doctor.completedAppointments }}</td>
-                  <td>
-                    <div class="d-flex align-items-center gap-2">
-                      <div class="rate-bar">
-                        <div class="rate-fill" [style.width.%]="doctor.completionRate"></div>
-                      </div>
-                      <span class="badge" [ngClass]="getRateBadgeClass(doctor.completionRate)">
-                        {{ doctor.completionRate }}%
-                      </span>
-                    </div>
-                  </td>
                   <td>{{ doctor.totalMedicalRecords }}</td>
                   <td><b>{{ doctor.todaysAppointments }}</b></td>
                   <td><span class="badge bg-success">Active</span></td>
