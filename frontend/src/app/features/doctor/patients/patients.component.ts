@@ -59,9 +59,37 @@ export class DoctorPatientsComponent implements OnInit {
     this.isLoading.set(true);
     this.errorMessage.set('');
 
-    // Get all patients (doctors can see patients in their hospital)
-    this.http.get<Patient[]>(`${this.apiUrl}/patients`).subscribe({
-      next: (patients) => {
+    const doctorId = this.authService.getCurrentUserId();
+    if (!doctorId) {
+      this.errorMessage.set('Doctor ID not found. Please login again.');
+      this.isLoading.set(false);
+      return;
+    }
+
+    // Get only this doctor's patients through their appointments
+    this.http.get<any[]>(`${this.apiUrl}/appointments/doctor/${doctorId}`).subscribe({
+      next: (appointments) => {
+        // Extract unique patients from appointments
+        const patientMap = new Map<number, Patient>();
+        
+        appointments.forEach(apt => {
+          if (!patientMap.has(apt.patientId)) {
+            patientMap.set(apt.patientId, {
+              id: apt.patientId,
+              firstName: apt.patientName?.split(' ')[0] || '',
+              lastName: apt.patientName?.split(' ').slice(1).join(' ') || '',
+              email: apt.patientEmail || '',
+              phone: apt.patientPhone || '',
+              dateOfBirth: apt.patientDateOfBirth || '',
+              gender: apt.patientGender || 'MALE',
+              bloodType: apt.patientBloodType || '',
+              address: apt.patientAddress || '',
+              hospitalId: apt.hospitalId || 0
+            } as Patient);
+          }
+        });
+
+        const patients = Array.from(patientMap.values());
         this.patients.set(patients);
         this.filteredPatients.set(patients);
         this.isLoading.set(false);

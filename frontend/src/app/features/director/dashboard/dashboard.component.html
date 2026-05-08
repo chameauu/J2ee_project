@@ -254,7 +254,7 @@
       </div>
     </div>
 
-    <!-- ROW 3: Specialization Breakdown + Top Performers -->
+    <!-- ROW 3: Specialization Breakdown -->
     <div class="row g-4 mb-4">
       <div class="col-12 col-lg-6">
         <div class="card">
@@ -269,27 +269,6 @@
                 <div class="progress" style="height: 7px;">
                   <div class="progress-bar bg-primary" [style.width.%]="spec.percentage"></div>
                 </div>
-              </div>
-            }
-          </div>
-        </div>
-      </div>
-
-      <div class="col-12 col-lg-6">
-        <div class="card">
-          <div class="card-body">
-            <h5 class="card-title mb-3">🏆 Top Performers This Month</h5>
-            @for (doctor of topPerformers(); track doctor.doctorId; let i = $index) {
-              <div class="top-performer-row d-flex align-items-center gap-3 py-2 border-bottom">
-                <div class="medal-icon">{{ getMedalEmoji(i) }}</div>
-                <div class="doctor-avatar" [style.background]="doctor.color">
-                  {{ getDoctorInitials(doctor.doctorName) }}
-                </div>
-                <div class="flex-grow-1">
-                  <div class="fw-semibold">{{ doctor.doctorName }}</div>
-                  <div class="small text-muted">{{ doctor.specialization }}</div>
-                </div>
-                <span class="badge bg-success">{{ doctor.completionRate }}%</span>
               </div>
             }
           </div>

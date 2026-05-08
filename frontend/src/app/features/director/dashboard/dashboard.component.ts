@@ -67,12 +67,6 @@ export class DirectorDashboardComponent implements OnInit {
     return user ? user.email.split('@')[0] : 'Director';
   });
 
-  protected readonly topPerformers = computed(() => {
-    return [...this.doctorPerformance()]
-      .sort((a, b) => b.completionRate - a.completionRate)
-      .slice(0, 5);
-  });
-
   protected readonly specializationStats = computed(() => {
     const data = this.dashboardData();
     const doctors = this.doctorPerformance();
@@ -156,14 +150,6 @@ export class DirectorDashboardComponent implements OnInit {
     if (rate >= 93) return 'bg-success';
     if (rate >= 88) return 'bg-warning';
     return 'bg-danger';
-  }
-
-  /**
-   * Get medal emoji for ranking
-   */
-  getMedalEmoji(index: number): string {
-    const medals = ['🥇', '🥈', '🥉', '4️⃣', '5️⃣'];
-    return medals[index] || '';
   }
 
   /**
